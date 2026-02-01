@@ -1,14 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
 import './UserMenu.css';
+import { supabase } from '../services/supabase';
 
 export function UserMenu() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
+  const [user, setUser] = useState(null);
+  
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    getUser();
+  }, []);
 
-  const userData = {
-    name: 'Trader Pro',
-    email: 'trader@example.com',
+    const userData = {
+    name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Trader',
+    email: user?.email || 'Non connecté',
     subscription: {
       status: 'active',
       plan: 'TradeGuard PRO',
@@ -43,9 +53,10 @@ export function UserMenu() {
     return () => document.removeEventListener('keydown', handleEscape);
   }, []);
 
-  const handleLogout = () => {
+    const handleLogout = async () => {
     if (window.confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-      window.location.href = '/logout';
+      await supabase.auth.signOut();
+      window.location.href = '/';
     }
   };
 
