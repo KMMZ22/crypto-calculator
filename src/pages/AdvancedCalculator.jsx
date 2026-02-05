@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, DollarSign, TrendingUp, TrendingDown, ArrowRight, AlertCircle, Info, Lock, Zap, Crown } from 'lucide-react';
-import { supabase } from '../services/supabase';
+import { supabase } from '../lib/supabase';
 
 export default function AdvancedCalculator() {
   const navigate = useNavigate();

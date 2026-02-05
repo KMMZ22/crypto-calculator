@@ -6,7 +6,7 @@ import {
   Calendar, DollarSign, PieChart, ChevronRight, LogOut,
   Check, Eye, EyeOff, AlertCircle, ArrowRight, Lock
 } from 'lucide-react';
-import { supabase } from '../services/supabase';
+import { supabase } from '../lib/supabase';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -211,13 +211,7 @@ export default function Dashboard() {
               </div>
               
               {/* Bouton principal vert comme dans l'auth */}
-              <button 
-                onClick={() => navigate('/calculator')}
-                className="px-4 py-2 bg-white text-black font-semibold rounded-lg hover:bg-gray-100 transition flex items-center gap-2"
-              >
-                <span></span>
-                Nouveau calcul
-              </button>
+              
             </div>
             
             <div className="flex items-center gap-4">
@@ -317,32 +311,7 @@ export default function Dashboard() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Message d'upgrade pour free users - style cohérent */}
-        {userPlan === 'free' && (
-          <div className="mb-6 p-6 bg-gray-900/50 border border-gray-800 rounded-xl">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-white mb-2">🚀 Essayez TradeGuard PRO gratuitement</h3>
-                <p className="text-gray-400">
-                  Débloquez toutes les fonctionnalités avancées pendant 7 jours sans engagement
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <button 
-                  onClick={() => upgradePlan('pro')}
-                  className={`px-6 py-3 ${getPlanColor('pro')} text-white font-bold rounded-lg hover:opacity-90 transition`}
-                >
-                  Essai gratuit 7 jours
-                </button>
-                <button 
-                  onClick={() => upgradePlan('elite')}
-                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-lg hover:opacity-90 transition"
-                >
-                  Voir ELITE
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+    
 
         {activeTab === 'overview' && (
           <div className="space-y-8">
@@ -474,51 +443,51 @@ export default function Dashboard() {
           </div>
 
           {/* Advanced Calculator Banner - PRO/ELITE only */}
-          {userPlan !== 'free' ? (
-            <button
-              onClick={() => navigate('/advanced-calculator')}
-              className="group w-full bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/40 hover:border-purple-500/60 rounded-xl p-6 transition-all hover:scale-[1.01]"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="p-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl">
-                    <Zap className="text-white" size={32} />
-                  </div>
-                  <div className="text-left">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-2xl font-bold text-white">Mode Advanced</h3>
-                      <div className="px-3 py-1 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full text-white text-xs font-bold">
-                        {userPlan === 'elite' ? 'ELITE' : 'PRO'}
-                      </div>
-                    </div>
-                    <p className="text-gray-300 mb-2">
-                      Les 2 calculateurs synchronisés sur un seul écran
-                    </p>
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="flex items-center gap-1 text-purple-400">
-                        <Zap size={14} />
-                        <span>Calculs automatiques</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-purple-400">
-                        <Zap size={14} />
-                        <span>Workflow optimisé</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-purple-400">
-                        <Zap size={14} />
-                        <span>Vue d'ensemble</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-purple-400 font-semibold group-hover:underline">
-                    Ouvrir Advanced →
-                  </span>
-                  <ArrowRight className="text-purple-400" size={24} />
-                </div>
-              </div>
-            </button>
-          ) : (
+{userPlan !== 'free' ? (
+  <button
+    onClick={() => navigate('/advanced-calculator')}
+    className="group w-full bg-black border-2 border-white hover:border-green-500 rounded-xl p-6 transition-all"
+  >
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-4">
+        <div className="p-4 bg-white group-hover:bg-green-500 rounded-xl transition-colors">
+          <Zap className="text-black group-hover:text-white transition-colors" size={32} />
+        </div>
+        <div className="text-left">
+          <div className="flex items-center gap-2 mb-2">
+            <h3 className="text-2xl font-bold text-white">Mode Advanced</h3>
+            <div className="px-3 py-1 bg-white group-hover:bg-green-500 text-black group-hover:text-white rounded-full text-xs font-bold transition-colors">
+              {userPlan === 'elite' ? 'ELITE' : 'PRO'}
+            </div>
+          </div>
+          <p className="text-gray-300 mb-2">
+            Les 2 calculateurs synchronisés sur un seul écran
+          </p>
+          <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-1 text-gray-400 group-hover:text-green-400 transition-colors">
+              <Zap size={14} />
+              <span>Calculs automatiques</span>
+            </div>
+            <div className="flex items-center gap-1 text-gray-400 group-hover:text-green-400 transition-colors">
+              <Zap size={14} />
+              <span>Workflow optimisé</span>
+            </div>
+            <div className="flex items-center gap-1 text-gray-400 group-hover:text-green-400 transition-colors">
+              <Zap size={14} />
+              <span> Vue d'ensemble</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="text-white group-hover:text-green-400 font-semibold transition-colors">
+          Ouvrir Advanced →
+        </span>
+        <ArrowRight className="text-white group-hover:text-green-400 transition-colors" size={24} />
+      </div>
+    </div>
+  </button>
+) : (
             /* Upgrade CTA for free users */
             <div className="bg-gradient-to-r from-gray-900 to-black border border-gray-800 rounded-xl p-6">
               <div className="flex items-center justify-between">
@@ -1017,6 +986,7 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+      
     </div>
   );
 }

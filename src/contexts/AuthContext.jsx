@@ -1,101 +1,211 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+// /src/contexts/AuthContext.jsx
+import React, { createContext, useContext, useEffect, useState } from 'react'
+// ⚠️ CORRECTION : Importe depuis le bon fichier
+import { authService } from '../services/authService' // si authService.js existe dans /src/services
+// OU
+// import { authService } from './authService' // si dans le même dossier
+// OU si tu n'as pas encore créé authService, utilise directement supabase :
+import { supabase } from '../lib/supabase'
 
-const AuthContext = createContext();
+// Version simplifiée sans authService
+const AuthContext = createContext({})
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const useAuth = () => useContext(AuthContext)
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null)
+  const [profile, setProfile] = useState(null)
+  const [loading, setLoading] = useState(true)
 
-  // Vérifier si l'utilisateur est connecté au démarrage
   useEffect(() => {
-    const savedUser = localStorage.getItem('tradeguard_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setLoading(false);
-  }, []);
-
-  // Inscription
-  const signup = async (username, email, password) => {
-    // Validation simple
-    if (password.length < 6) {
-      throw new Error('Le mot de passe doit contenir au moins 6 caractères');
-    }
-
-    // Simuler une requête API
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const newUser = {
-          id: Date.now(),
-          username,
-          email,
-          plan: 'FREE', // Par défaut FREE
-          createdAt: new Date().toISOString()
-        };
-        
-        setUser(newUser);
-        localStorage.setItem('tradeguard_user', JSON.stringify(newUser));
-        resolve(newUser);
-      }, 500);
-    });
-  };
-
-  // Connexion
-  const login = async (email, password) => {
-    // Simuler une vérification
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const savedUser = localStorage.getItem('tradeguard_user');
-        if (savedUser) {
-          const userData = JSON.parse(savedUser);
-          if (userData.email === email) {
-            setUser(userData);
-            resolve(userData);
-          } else {
-            reject(new Error('Email ou mot de passe incorrect'));
-          }
-        } else {
-          reject(new Error('Utilisateur non trouvé'));
-        }
-      }, 500);
-    });
-  };
-
-  // Déconnexion
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('tradeguard_user');
-  };
-
-  // Mettre à jour le plan
-  const upgradePlan = (newPlan) => {
-    if (!user) return;
+    // Vérifier l'utilisateur au chargement
+    checkUser()
     
-    const updatedUser = { ...user, plan: newPlan };
-    setUser(updatedUser);
-    localStorage.setItem('tradeguard_user', JSON.stringify(updatedUser));
-  };
+    // Écouter les changements d'authentification
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('🔐 Auth event:', event, session?.user?.email)
+        
+        if (session?.user) {
+          setUser(session.user)
+          await fetchProfile(session.user.id)
+        } else {
+          setUser(null)
+          setProfile(null)
+        }
+        setLoading(false)
+      }
+    )
+    
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  const checkUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      console.log('👤 Current user:', user?.email)
+      setUser(user)
+      if (user) {
+        await fetchProfile(user.id)
+      }
+    } catch (error) {
+      console.error('❌ Error checking user:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchProfile = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+      
+      if (error) {
+        console.error('Error fetching profile:', error)
+        // Peut-être le profil n'existe pas encore
+        if (error.code === 'PGRST116') {
+          console.log('Profile not found, will create later')
+        }
+      } else {
+        setProfile(data)
+        console.log('📋 Profile loaded:', data.email)
+      }
+    } catch (error) {
+      console.error('Error in fetchProfile:', error)
+    }
+  }
+
+  const signUp = async (email, password, userData = {}) => {
+    setLoading(true)
+    try {
+      console.log('📝 Signing up:', email)
+      
+      // 1. Créer l'utilisateur dans auth
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: userData
+        }
+      })
+      
+      if (error) throw error
+      
+      // 2. Créer le profil dans public.profiles
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([{
+            id: data.user.id,
+            email: email,
+            username: userData.username || email.split('@')[0],
+            full_name: userData.full_name || '',
+            subscription_plan: 'free',
+            credits: 10
+          }])
+        
+        if (profileError) {
+          console.error('Profile creation error:', profileError)
+          // Continue quand même - le profil peut être créé plus tard
+        }
+        
+        // 3. Créer les crédits IA
+        await supabase
+          .from('ai_credits')
+          .insert([{
+            user_id: data.user.id,
+            remaining_credits: 50
+          }])
+        
+        setUser(data.user)
+        await fetchProfile(data.user.id)
+      }
+      
+      return { data, error: null }
+    } catch (error) {
+      console.error('❌ Sign up error:', error)
+      return { data: null, error }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const signIn = async (email, password) => {
+    setLoading(true)
+    try {
+      console.log('🔑 Signing in:', email)
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
+      
+      if (error) throw error
+      
+      setUser(data.user)
+      await fetchProfile(data.user.id)
+      
+      return { data, error: null }
+    } catch (error) {
+      console.error('❌ Sign in error:', error)
+      return { data: null, error }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const signOut = async () => {
+    setLoading(true)
+    try {
+      await supabase.auth.signOut()
+      setUser(null)
+      setProfile(null)
+      console.log('👋 User signed out')
+    } catch (error) {
+      console.error('❌ Sign out error:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const updateProfile = async (updates) => {
+    if (!user) return { error: 'No user' }
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id)
+      
+      if (error) throw error
+      
+      // Mettre à jour l'état local
+      setProfile(prev => ({ ...prev, ...updates }))
+      
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error }
+    }
+  }
 
   const value = {
     user,
+    profile,
     loading,
-    signup,
-    login,
-    logout,
-    upgradePlan
-  };
+    signUp,
+    signIn,
+    signOut,
+    updateProfile,
+    refreshProfile: () => user && fetchProfile(user.id)
+  }
 
   return (
     <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
-  );
-};
+  )
+}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../services/supabase';
+import { supabase } from '../lib/supabase';
 import { Crown, Zap, Check, Loader2 } from 'lucide-react';
 
 // Initialiser Stripe

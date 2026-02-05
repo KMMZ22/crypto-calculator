@@ -10,8 +10,8 @@ export default function TradeGuardLanding() {
 
   useEffect(() => {
     const screenInterval = setInterval(() => {
-      setActiveScreen((prev) => (prev + 1) % 2);
-    }, 5000);
+      setActiveScreen((prev) => (prev + 1) % 3);
+    }, 6500);
     return () => clearInterval(screenInterval);
   }, []);
 
@@ -125,7 +125,7 @@ export default function TradeGuardLanding() {
           <div className="relative bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-2xl overflow-hidden shadow-2xl" style={{ minHeight: '600px' }}>
             {/* Dashboard Screenshot */}
             <div 
-              className={`absolute inset-0 transition-all duration-700 ${
+              className={`absolute inset-0 transition-all duration-[1.1s] ease-in-out ${
                 activeScreen === 0 ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
               }`}
             >
@@ -190,9 +190,9 @@ export default function TradeGuardLanding() {
               </div>
             </div>
 
-            {/* Calculator Screenshot */}
+            {/* Position Calculator Screenshot */}
             <div 
-              className={`absolute inset-0 transition-all duration-700 ${
+              className={`absolute inset-0 transition-all duration-[1.1s] ease-in-out ${
                 activeScreen === 1 ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
               }`}
             >
@@ -271,6 +271,85 @@ export default function TradeGuardLanding() {
               </div>
             </div>
 
+            {/* PnL Calculator Screenshot */}
+            <div 
+              className={`absolute inset-0 transition-all duration-[1.1s] ease-in-out ${
+                activeScreen === 2 ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+              }`}
+            >
+              <div className="p-8 lg:p-12 h-full">
+                <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-800">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <Shield className="text-white" size={24} />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-[8px] font-bold text-black">$€¥</span>
+                      </div>
+                    </div>
+                    <span className="font-bold text-lg">PnL Calculator</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  </div>
+                </div>
+
+                <div className="grid lg:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <div className="bg-black/50 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition">
+                      <div className="text-xs text-gray-500 mb-2">Prix d'entrée</div>
+                      <div className="bg-gray-900 rounded px-3 py-2 font-mono">$50,000</div>
+                    </div>
+                    <div className="bg-black/50 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition">
+                      <div className="text-xs text-gray-500 mb-2">Prix de sortie</div>
+                      <div className="bg-gray-900 rounded px-3 py-2 font-mono text-green-500">$52,500</div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-black/50 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition">
+                        <div className="text-xs text-gray-500 mb-2">Taille position</div>
+                        <div className="bg-gray-900 rounded px-3 py-2 font-mono text-sm">$5,000</div>
+                      </div>
+                      <div className="bg-black/50 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition">
+                        <div className="text-xs text-gray-500 mb-2">Levier</div>
+                        <div className="bg-gray-900 rounded px-3 py-2 font-mono text-sm">5x</div>
+                      </div>
+                    </div>
+                    <div className="bg-black/50 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition">
+                      <div className="text-xs text-gray-500 mb-2">Type</div>
+                      <div className="text-sm font-medium text-green-500">Long</div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="bg-gradient-to-br from-green-500/20 to-transparent border border-green-500/30 rounded-xl p-6 hover:border-green-500/40 transition">
+                      <div className="text-xs text-green-400 mb-2">P&L Net</div>
+                      <div className="font-mono text-4xl font-bold text-green-500 mb-1">+$235.50</div>
+                      <div className="text-sm text-gray-400">après frais 0.1%</div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 hover:border-green-500/30 transition">
+                        <div className="text-xs text-green-400 mb-1">ROI</div>
+                        <div className="font-mono text-xl font-bold text-green-500">+4.71%</div>
+                      </div>
+                      <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 hover:border-gray-600 transition">
+                        <div className="text-xs text-gray-500 mb-1">Frais totaux</div>
+                        <div className="font-mono text-lg font-bold text-gray-400">$14.50</div>
+                      </div>
+                    </div>
+
+                    <div className="bg-black/50 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-400">Variation prix</span>
+                        <span className="font-mono text-lg font-bold text-green-500">+5.00%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Indicateurs de navigation améliorés */}
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2">
               <button
@@ -285,7 +364,14 @@ export default function TradeGuardLanding() {
                 className={`h-2 rounded-full transition-all ${
                   activeScreen === 1 ? 'w-8 bg-white' : 'w-2 bg-gray-600 hover:bg-gray-500'
                 }`}
-                aria-label="Voir le calculateur"
+                aria-label="Voir le calculateur de position"
+              />
+              <button
+                onClick={() => setActiveScreen(2)}
+                className={`h-2 rounded-full transition-all ${
+                  activeScreen === 2 ? 'w-8 bg-white' : 'w-2 bg-gray-600 hover:bg-gray-500'
+                }`}
+                aria-label="Voir le calculateur PnL"
               />
             </div>
           </div>
@@ -665,45 +751,158 @@ export default function TradeGuardLanding() {
         </div>
       </section>
 
-      {/* CTA Final */}
+      {/* Choix de plan - avant le footer */}
       <section className="px-6 py-24 bg-gradient-to-b from-black to-gray-950">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/30 rounded-full mb-8 text-sm text-green-500">
-            <Zap size={16} className="fill-green-500" />
-            <span>500+ traders protègent leur capital</span>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-sm uppercase tracking-wider text-gray-500 mb-4">Choisissez votre plan</h2>
+            <p className="text-4xl font-bold">Simple et transparent</p>
+            <p className="text-gray-500 mt-2">Paiement en euros • Facture disponible</p>
           </div>
 
-          <h2 className="text-5xl lg:text-6xl font-extrabold mb-6 leading-tight">
-            Prêt à trader avec discipline ?
-          </h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Free */}
+            <div className="p-8 border border-gray-800 rounded-2xl hover:border-gray-700 transition">
+              <div className="mb-8">
+                <div className="text-sm text-gray-500 mb-2">Gratuit</div>
+                <div className="font-mono text-4xl font-bold">0€</div>
+                <div className="text-sm text-gray-500">/mois</div>
+              </div>
+              <ul className="space-y-3 mb-8 text-sm">
+                <li className="flex items-start gap-2">
+                  <Check size={16} className="text-green-500 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-400">1 position simultanée</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check size={16} className="text-green-500 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-400">Calculs basiques</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check size={16} className="text-green-500 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-400">R:R calculator</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check size={16} className="text-green-500 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-400">Historique 30 jours</span>
+                </li>
+              </ul>
+              <button 
+                onClick={() => handleSignup('FREE')}
+                className="w-full py-3 border border-gray-800 rounded-lg hover:border-gray-700 hover:bg-gray-900 transition font-medium"
+              >
+                Commencer gratuitement
+              </button>
+            </div>
 
-          <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Rejoignez les traders intelligents qui ne laissent plus leurs émotions dicter leurs positions.
-          </p>
+            {/* Pro */}
+            <div className="p-8 bg-white text-black rounded-2xl relative transform hover:scale-105 transition">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
+                POPULAIRE
+              </div>
+              <div className="mb-8">
+                <div className="text-sm text-gray-600 mb-2">Pro</div>
+                <div className="font-mono text-4xl font-bold">19€</div>
+                <div className="text-sm text-gray-600">/mois</div>
+                <div className="text-sm text-green-600 font-medium mt-1">
+                  ou 175€/an
+                </div>
+              </div>
+              <ul className="space-y-3 mb-8 text-sm">
+                <li className="flex items-start gap-2">
+                  <Check size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <span>10 positions simultanées</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <span>Prix live API (Binance, Bybit)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <span>Historique illimité</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <span>Export PDF/CSV</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <span>Support prioritaire email</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <span>Stratégies avancées</span>
+                </li>
+              </ul>
+              <button 
+                onClick={() => handleSignup('PRO')}
+                className="w-full py-3 bg-black text-white rounded-lg hover:bg-gray-900 transition font-medium"
+              >
+                Choisir Pro
+              </button>
+              <p className="text-xs text-gray-500 text-center mt-3">
+                Annulation à tout moment
+              </p>
+            </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => handleSignup('FREE')}
-              className="px-8 py-4 bg-white text-black font-semibold rounded-lg hover:bg-gray-100 transition"
-            >
-              Commencer gratuitement
-            </button>
-            <button
-              onClick={() => handleSignup('PRO')}
-              className="px-8 py-4 border border-gray-800 text-white font-semibold rounded-lg hover:border-gray-700 hover:bg-gray-900 transition"
-            >
-              Essayer Pro (14 jours)
-            </button>
+            {/* Elite */}
+            <div className="p-8 border border-gray-800 rounded-2xl hover:border-gray-700 transition">
+              <div className="mb-8">
+                <div className="text-sm text-gray-500 mb-2">Elite</div>
+                <div className="font-mono text-4xl font-bold">49€</div>
+                <div className="text-sm text-gray-500">/mois</div>
+                <div className="text-sm text-blue-500 font-medium mt-1">
+                  -20% en annuel (470€)
+                </div>
+              </div>
+              <ul className="space-y-3 mb-8 text-sm">
+                <li className="flex items-start gap-2">
+                  <Check size={16} className="text-green-500 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-400">Tout Pro +</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check size={16} className="text-green-500 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-400">Positions illimitées</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check size={16} className="text-green-500 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-400">AI Trade Advisor</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check size={16} className="text-green-500 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-400">API access (1000 req/jour)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check size={16} className="text-green-500 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-400">Support VIP Discord 24/7</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check size={16} className="text-green-500 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-400">Backtests avancés</span>
+                </li>
+              </ul>
+              <button 
+                onClick={() => handleSignup('ELITE')}
+                className="w-full py-3 border border-gray-800 rounded-lg hover:border-gray-700 hover:bg-gray-900 transition font-medium"
+              >
+                Choisir Elite
+              </button>
+              <p className="text-xs text-gray-500 text-center mt-3">
+                Facture professionnelle disponible
+              </p>
+            </div>
           </div>
 
-          <p className="text-sm text-gray-500 mt-6">
-            Aucune carte bancaire requise • Annulez à tout moment
-          </p>
+          <div className="text-center mt-12 pt-8 border-t border-gray-800">
+            <p className="text-gray-500 text-sm">
+              <strong>Paiement sécurisé :</strong> Stripe • Cartes bancaires • Virement SEPA<br/>
+              <strong>Garantie :</strong> Satisfait ou remboursé • TVA française incluse<br/>
+              <strong>Support :</strong> support@tradeguard.app • Discord communautaire
+            </p>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-            {/* Footer */}
       <footer className="px-6 py-12 border-t border-gray-900">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center">

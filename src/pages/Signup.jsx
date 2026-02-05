@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../services/supabase";
+import { supabase } from "../lib/supabase";
 import { Shield, Eye, EyeOff, AlertCircle, Check, FileText } from "lucide-react";
 
 export default function Signup() {

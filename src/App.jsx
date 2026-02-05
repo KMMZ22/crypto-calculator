@@ -1,69 +1,76 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { supabase } from './services/supabase';
-import Landing from './pages/Landing';
-import Calculator from './pages/Calculator';
-import Dashboard from './pages/Dashboard'; 
-import Signup from "./pages/Signup.jsx"; 
-import Login from "./pages/Login"; 
-import Auth from './pages/Auth';
-import './App.css';
-import StripeSuccess from './components/StripeSuccess';
-import SelectPlan from './pages/SelectPlan';
-import PnLCalculator from './pages/PnLCalculator';
-import AdvancedCalculator from './pages/AdvancedCalculator';
-import Terms from './pages/Terms'; 
+// Dans src/App.jsx
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { AuthProvider } from './contexts/AuthContext';
+
+// Components - utilisez ce que vous avez réellement
+import ProtectedRoute from "./components/ProtectedRoute";
+import ElitePlanGuard from "./components/ElitePlanGuard";
+
+// Pages - utilisez les fichiers que vous avez réellement
+import Dashboard from "./pages/Dashboard";
+import Calculator from "./pages/Calculator";  // Au lieu de Calculators.jsx
+import AIAdvisor from "./pages/AIAdvisor";
+import Auth from "./pages/Auth";  // Au lieu de Settings.jsx
+import SelectPlan from "./pages/SelectPlan";  // Au lieu de Billing.jsx
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";  // Notez 'Signup' pas 'SignUp'
+import Backtesting from "./pages/Backtesting";
+
+// Pour les autres pages que vous avez
+import AdvancedCalculator from "./pages/AdvancedCalculator";
+import PnLCalculator from "./pages/PnLCalculator";
+import Checkout from "./pages/Checkout";
+import Landing from "./pages/Landing";
 import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+
+const theme = createTheme({
+  palette: {
+    mode: 'light',
+    primary: { main: '#1976d2' },
+    secondary: { main: '#dc004e' },
+  },
+});
+
 function App() {
-  const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Vérifier la session actuelle
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
-
-    // Écouter les changements d'authentification
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        <div className="text-white text-lg">Chargement...</div>
-      </div>
-    );
-  }
-
   return (
-    <Router>
-      <Routes>
-        {/* Routes publiques */}
-        <Route path="/" element={<Landing />} />
-        <Route path="/select-plan" element={session ? <SelectPlan /> : <Navigate to="/auth" />} />
-        <Route path="/auth" element={<Navigate to="/signup" />} />
-        
-        {/* Routes protégées */}
-        <Route path="/dashboard" element={session ? <Dashboard /> : <Navigate to="/auth" />} />
-        <Route path="/calculator" element={session ? <Calculator /> : <Navigate to="/auth" />} />
-        <Route path="/signup" element={<Signup />} /> 
-        <Route path="/login" element={<Login />} /> 
-        <Route path="/stripe-success" element={<StripeSuccess />} />
-        <Route path="*" element={<Navigate to={session ? "/dashboard" : "/"} />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/pnl-calculator" element={<PnLCalculator />} />
-          <Route path="/advanced-calculator" element={<AdvancedCalculator />} />
-      </Routes>
-    </Router>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AuthProvider>
+        <Router>
+          <div className="App">
+            <Routes>
+              {/* Routes publiques */}
+              <Route path="/" element={<Landing />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              
+              {/* Routes protégées */}
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/calculator" element={<ProtectedRoute><Calculator /></ProtectedRoute>} />
+              <Route path="/advanced-calculator" element={<ProtectedRoute><AdvancedCalculator /></ProtectedRoute>} />
+              <Route path="/pnl-calculator" element={<ProtectedRoute><PnLCalculator /></ProtectedRoute>} />
+              <Route path="/ai-advisor" element={
+                <ProtectedRoute>
+                  <ElitePlanGuard>
+                    <AIAdvisor />
+                  </ElitePlanGuard>
+                </ProtectedRoute>
+              } />
+              <Route path="/backtesting" element={<ProtectedRoute><Backtesting /></ProtectedRoute>} />
+              <Route path="/auth" element={<ProtectedRoute><Auth /></ProtectedRoute>} />
+              <Route path="/select-plan" element={<ProtectedRoute><SelectPlan /></ProtectedRoute>} />
+              <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+            </Routes>
+          </div>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

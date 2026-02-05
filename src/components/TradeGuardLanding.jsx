@@ -5,7 +5,7 @@ import {
   Smartphone, ArrowRight, Check, AlertCircle, User, Mail, Calculator
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import UpgradeButton from './components/UpgradeButton';
+import UpgradeButton from './UpgradeButton';
 
 export default function TradeGuardLanding() {
   const navigate = useNavigate();

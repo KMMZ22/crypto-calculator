@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import './UserMenu.css';
-import { supabase } from '../services/supabase';
+import { supabase } from '../lib/supabase';
 
 export function UserMenu() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

@@ -7,7 +7,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useLivePrice } from '../hooks/useLivePrice';
 import { tradeStorage } from '../utils/storage';
-import { supabase } from '../services/supabase';
+import { supabase } from '../lib/supabase';
 
 export default function Calculator() {
   const navigate = useNavigate();
@@ -55,12 +55,12 @@ export default function Calculator() {
       switch(assetType) {
         case 'crypto':
           setAvailablePairs([
-            { value: 'BTCUSDT', label: 'Bitcoin (BTC/USDT)', icon: '₿' },
-            { value: 'ETHUSDT', label: 'Ethereum (ETH/USDT)', icon: 'Ξ' },
-            { value: 'SOLUSDT', label: 'Solana (SOL/USDT)', icon: '◎' },
-            { value: 'ADAUSDT', label: 'Cardano (ADA/USDT)', icon: 'A' },
-            { value: 'XRPUSDT', label: 'Ripple (XRP/USDT)', icon: 'X' },
-            { value: 'DOTUSDT', label: 'Polkadot (DOT/USDT)', icon: '●' },
+            { value: 'BTCUSDT', label: 'Bitcoin (BTC/USDT)' },
+            { value: 'ETHUSDT', label: 'Ethereum (ETH/USDT)' },
+            { value: 'SOLUSDT', label: 'Solana (SOL/USDT)' },
+            { value: 'ADAUSDT', label: 'Cardano (ADA/USDT)' },
+            { value: 'XRPUSDT', label: 'Ripple (XRP/USDT)' },
+            { value: 'DOTUSDT', label: 'Polkadot (DOT/USDT)' },
           ]);
           setFees(0.1);
           setLeverage(userPlan === 'free' ? 1 : 5);
@@ -69,12 +69,12 @@ export default function Calculator() {
           
         case 'stocks':
           setAvailablePairs([
-            { value: 'TSLA', label: 'Tesla Inc. (TSLA)', icon: '🚗' },
-            { value: 'AAPL', label: 'Apple Inc. (AAPL)', icon: '🍎' },
-            { value: 'NVDA', label: 'NVIDIA Corp. (NVDA)', icon: '🎮' },
-            { value: 'AMZN', label: 'Amazon.com Inc. (AMZN)', icon: '📦' },
-            { value: 'MSFT', label: 'Microsoft Corp. (MSFT)', icon: '💻' },
-            { value: 'GOOGL', label: 'Alphabet Inc. (GOOGL)', icon: '🔍' },
+            { value: 'TSLA', label: 'Tesla Inc. (TSLA)' },
+            { value: 'AAPL', label: 'Apple Inc. (AAPL)' },
+            { value: 'NVDA', label: 'NVIDIA Corp. (NVDA)' },
+            { value: 'AMZN', label: 'Amazon.com Inc. (AMZN)' },
+            { value: 'MSFT', label: 'Microsoft Corp. (MSFT)' },
+            { value: 'GOOGL', label: 'Alphabet Inc. (GOOGL)' },
           ]);
           setFees(0);
           setLeverage(1);
@@ -83,12 +83,12 @@ export default function Calculator() {
           
         case 'forex':
           setAvailablePairs([
-            { value: 'EURUSD', label: 'Euro / US Dollar (EUR/USD)', icon: '€' },
-            { value: 'GBPUSD', label: 'British Pound / USD (GBP/USD)', icon: '£' },
-            { value: 'USDJPY', label: 'US Dollar / Japanese Yen (USD/JPY)', icon: '¥' },
-            { value: 'USDCHF', label: 'US Dollar / Swiss Franc (USD/CHF)', icon: '₣' },
-            { value: 'AUDUSD', label: 'Australian Dollar / USD (AUD/USD)', icon: 'A$' },
-            { value: 'USDCAD', label: 'US Dollar / Canadian Dollar (USDCAD)', icon: 'C$' },
+            { value: 'EURUSD', label: 'Euro / US Dollar (EUR/USD)' },
+            { value: 'GBPUSD', label: 'British Pound / USD (GBP/USD)' },
+            { value: 'USDJPY', label: 'US Dollar / Japanese Yen (USD/JPY)' },
+            { value: 'USDCHF', label: 'US Dollar / Swiss Franc (USD/CHF)' },
+            { value: 'AUDUSD', label: 'Australian Dollar / USD (AUD/USD)' },
+            { value: 'USDCAD', label: 'US Dollar / Canadian Dollar (USDCAD)' },
           ]);
           setFees(0.0002);
           setLeverage(30);
@@ -316,13 +316,12 @@ export default function Calculator() {
                     <button
                       key={pair.value}
                       onClick={() => setSelectedSymbol(pair.value)}
-                      className={`p-3 rounded-lg border transition flex items-center justify-center gap-2 ${
+                      className={`p-3 rounded-lg border transition flex items-center justify-center ${
                         selectedSymbol === pair.value
                           ? 'bg-green-500/20 border-green-500 text-white'
                           : 'bg-gray-800/50 border-gray-700 text-gray-300 hover:bg-gray-700/50'
                       }`}
                     >
-                      <span className="text-xl">{pair.icon}</span>
                       <span className="text-sm font-medium">{pair.value}</span>
                     </button>
                   ))}

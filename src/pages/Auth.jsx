@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Shield, Mail, Lock, User, Eye, EyeOff, ArrowRight, AlertCircle, Check } from 'lucide-react';
-import { supabase } from '../services/supabase';
+import { supabase } from '../lib/supabase';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -84,9 +84,9 @@ export default function Auth() {
           password,
           options: {
             data: {
-              plan: plan,
               username: username,
-              full_name: username
+            full_name: username,
+            plan: 'FREE' // ⚠️ Toujours FREE au départ
             }
           }
         });
@@ -94,13 +94,14 @@ export default function Auth() {
         if (error) throw error;
         setSuccess(true);
         
-        await sendWelcomeEmail(email, plan, username);
-        
+        await sendWelcomeEmail(email, 'FREE', username);
+        // Rediriger vers la selection de plan
         setTimeout(() => {
           navigate('/select-plan');
         }, 2000);
         
       } else {
+        //login
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,

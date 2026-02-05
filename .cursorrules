@@ -1,0 +1,29 @@
+## 1. LOGIQUE MÉTIER & FORMULES (Source : TradeGuard Documentation)
+Applique strictement ces règles de calcul :
+- **FORMULE POSITION SIZING :** `Montant du risque / ((Prix d'entrée - Stop Loss) / Prix d'entrée)`.
+- **GESTION DES ACTIFS :** 
+    - **Forex :** Précision à **5 décimales** pour la majorité des paires (calcul basé sur les pips) et **3 décimales** pour les paires liées au JPY.
+    - **Indices/Crypto :** Le point ou le tick est calculé comme la **différence absolue entre le prix d'entrée et le stop-loss**, rapportée à la valeur nominale de l'actif.
+- **CALCUL P&L :** Toujours déduire les **frais d'échange (fees)** et le spread du profit brut pour afficher le **P&L Net**.
+
+## 2. RÈGLES DE DÉVELOPPEMENT "ZERO ERREUR"
+- **PRÉCISION :** Ne jamais utiliser les flottants standards de JS pour les calculs financiers. Utilisez une bibliothèque comme **Decimal.js** ou **Big.js** (Note : cette recommandation de bibliothèque spécifique n'est pas dans les sources, mais elle répond à l'exigence de précision financière mentionnée pour éviter les erreurs de calcul).
+- **VALIDATION :** Avant de retourner un résultat, vérifie que le Risk/Reward est cohérent. Si **RR < 1**, propose une alerte visuelle "Risqué - Reconsidérer le trade".
+- **PERFORMANCE :** Le calcul doit être instantané, permettant une exécution en moins de **10 secondes** pour l'utilisateur.
+
+## 3. IDENTITÉ VISUELLE & UX (Trading Dashboard)
+- **COULEURS :** 
+    - **Profit/Bullish :** Vert Émeraude (associé au succès et aux gains).
+    - **Perte/Bearish :** Rouge Néon (associé aux alertes de sécurité et stop-loss).
+    - **Accent :** Bleu Royal pour les boutons d'action (comme "Calculer" ou "Sauvegarder").
+- **COMPOSANTS :** Utiliser des inputs optimisés pour le pavé numérique, particulièrement pour la saisie du **capital**, du **prix d'entrée** et du **stop-loss**.
+
+## 4. CONTEXTE DE LA CODEBASE
+- **Framework :** **React + Vite**.
+- **État Global :** Bien que non spécifié explicitement, l'utilisation de **Zustand** ou de **React Context** est recommandée pour gérer l'état du calculateur entre les modules (Note : ceci est une suggestion de développement standard pour la stack mentionnée).
+- **UI Library :** **Tailwind CSS**.
+- **Backend/Base de données :** **Node.js + Express** avec **PostgreSQL via Supabase**.
+
+## 5. INSTRUCTIONS RÉCURRENTES
+- Toujours vérifier l'impact d'une modification sur le fichier central de calcul : **`calculatePosition`**.
+- Si je demande d'ajouter un actif, demande-moi d'abord sa **"Tick Size"** (taille du mouvement minimal) et sa **"Contract Size"** (valeur du lot) pour garantir la précision du calcul de quantité.

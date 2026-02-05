@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase, subscriptionService } from '../services/supabase';
+import { supabase } from '../lib/supabase';
+import { authService } from '../services/authService';
 import { Check, Shield, Zap, Loader2 } from 'lucide-react';
 
 const StripeSuccess = () => {
@@ -33,7 +34,7 @@ const StripeSuccess = () => {
         const plan = searchParams.get('plan') || 'pro';
         
         // Mettre à jour le plan dans Supabase
-        await subscriptionService.updateUserPlan(user.id, plan, {
+        await authService.updateUserPlan(user.id, plan, {
           customerId: `cust_${Date.now()}`, // Simulé
           subscriptionId: sessionId,
           currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // +30 jours
