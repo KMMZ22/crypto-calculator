@@ -17,12 +17,17 @@ export default function TradeGuardLanding() {
   };
 
   const handleSignup = (plan) => {
-    navigate(`/auth?plan=${plan.toLowerCase()}`);
+    if (plan && plan !== 'free') {
+      navigate('/signup?plan=' + plan.toLowerCase());
+    } else {
+      navigate('/signup');
+    }
   };
 
   const handleLogin = () => {
-    navigate('/auth');
+    navigate('/login'); // ← CORRIGÉ
   };
+  
 
   return (
     <div className="bg-black text-white min-h-screen">

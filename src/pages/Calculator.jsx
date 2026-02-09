@@ -157,7 +157,7 @@ export default function Calculator() {
     
     if (userPlan === 'free') {
       alert('La sauvegarde des trades est une fonctionnalité PRO');
-      navigate('/auth?plan=pro');
+      navigate('/signup?plan=pro');
       return;
     }
     
@@ -179,7 +179,7 @@ export default function Calculator() {
   };
 
   const upgradePlan = (plan) => {
-    navigate(`/auth?plan=${plan}`);
+    navigate(`/signup?plan=${plan}`);
   };
 
   const canUseFeature = (featurePlan) => {

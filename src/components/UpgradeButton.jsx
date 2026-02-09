@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Crown, Zap, Check, Loader2 } from 'lucide-react';
 
 // Initialiser Stripe
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 const UpgradeButton = ({ 
   plan = 'pro', 
@@ -29,14 +27,7 @@ const UpgradeButton = ({
         navigate('/auth');
         return;
       }
-      
-      // 2. Récupérer le Stripe Customer ID ou en créer un
-      let stripeCustomerId = user.user_metadata?.stripe_customer_id;
-      
-      if (!stripeCustomerId) {
-        // En mode frontend-only, on utilise checkout sans customer ID
-        // En production, il faudrait un backend pour créer le customer
-      }
+
       
       // 3. ID du prix selon le plan
       const priceId = plan === 'pro' 

@@ -1,0 +1,27 @@
+# railway.toml
+[build]
+builder = "dockerfile"
+dockerfilePath = "./backend/Dockerfile"
+
+[deploy]
+startCommand = "node index.js"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+healthcheckInterval = 60
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[environments]
+  [environments.production]
+    [environments.production.variables]
+      NODE_ENV = "production"
+      PORT = "3000"
+
+[healthchecks]
+  [healthchecks.liveness]
+    type = "http"
+    path = "/health"
+    timeout = 5
+    interval = 30
+    maxRetries = 3
+    initialDelay = 10

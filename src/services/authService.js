@@ -1,136 +1,151 @@
-// /src/services/authService.js
-import { supabase } from '../lib/supabase'
+// services/authService.js
+import { clerkClient } from '@clerk/backend';
 
-export const authService = {
-  // Inscription
-  signUp: async (email, password, userData = {}) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: userData // username, full_name, etc.
-      }
-    })
-    
-    // Si inscription réussie, créer le profil
-    if (data?.user && !error) {
-      await createUserProfile(data.user.id, email, userData)
+class AuthService {
+    // Inscription via Clerk (le frontend gère l'UI)
+    async register(userData) {
+        try {
+            // Clerk gère l'inscription côté frontend
+            // On peut juste créer des métadonnées utilisateur
+            return {
+                success: true,
+                message: 'User registration handled by Clerk frontend'
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
     }
-    
-    return { data, error }
-  },
-  
-  // Connexion
-  signIn: async (email, password) => {
-    return await supabase.auth.signInWithPassword({ email, password })
-  },
-  
-  // Connexion avec Google
-  signInWithGoogle: async () => {
-    return await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`
-      }
-    })
-  },
-  
-  // Déconnexion
-  signOut: async () => {
-    return await supabase.auth.signOut()
-  },
-  
-  // Récupérer la session
-  getSession: async () => {
-    return await supabase.auth.getSession()
-  },
-  
-  // Récupérer l'utilisateur courant
-  getUser: async () => {
-    return await supabase.auth.getUser()
-  },
-  
-  // Écouter les changements d'authentification
-  onAuthStateChange: (callback) => {
-    return supabase.auth.onAuthStateChange(callback)
-  },
-  
-  // Réinitialiser le mot de passe
-  resetPassword: async (email) => {
-    return await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`
-    })
-  },
-  
-  // Mettre à jour le mot de passe
-  updatePassword: async (newPassword) => {
-    return await supabase.auth.updateUser({ password: newPassword })
-  },
-  
-  // Mettre à jour le profil
-  updateProfile: async (userId, updates) => {
-    return await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', userId)
-  },
-  
-  // Récupérer le profil
-  getProfile: async (userId) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    
-    return { data, error }
-  },
 
-  // Mettre à jour le plan utilisateur (après paiement Stripe)
-  updateUserPlan: async (userId, plan, { customerId, subscriptionId, currentPeriodEnd } = {}) => {
-    const planLower = (plan || 'free').toLowerCase()
-    const updates = {
-      subscription_plan: planLower,
-      subscription_tier: planLower
+    // Connexion via Clerk (frontend aussi)
+    async login() {
+        return {
+            success: true,
+            message: 'Login handled by Clerk frontend components'
+        };
     }
-    if (customerId) updates.stripe_customer_id = customerId
-    if (subscriptionId) updates.stripe_subscription_id = subscriptionId
-    if (currentPeriodEnd) updates.subscription_period_end = currentPeriodEnd?.toISOString?.() || currentPeriodEnd
 
-    return await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', userId)
-  }
+    // Déconnexion
+    async logout() {
+        return {
+            success: true,
+            message: 'Logout handled by Clerk frontend'
+        };
+    }
+
+    // Récupérer l'utilisateur courant
+    async getCurrentUser(userId) {
+        try {
+            const user = await clerkClient.users.getUser(userId);
+            
+            // Récupérer les métadonnées personnalisées
+            const privateMetadata = user.privateMetadata || {};
+            
+            return {
+                success: true,
+                user: {
+                    id: user.id,
+                    email: user.primaryEmailAddress?.emailAddress,
+                    username: user.username,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    imageUrl: user.imageUrl,
+                    subscription_plan: privateMetadata.subscription_plan || 'FREE',
+                    credits: privateMetadata.credits || 10,
+                    trial_ends_at: privateMetadata.trial_ends_at,
+                    createdAt: user.createdAt
+                }
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    // Mettre à jour vers ELITE
+    async upgradeToElite(userId) {
+        try {
+            // Mettre à jour les métadonnées privées de l'utilisateur
+            await clerkClient.users.updateUser(userId, {
+                privateMetadata: {
+                    subscription_plan: 'ELITE',
+                    subscription_status: 'active',
+                    subscription_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                    credits: 1000,
+                    updated_at: new Date().toISOString()
+                }
+            });
+
+            // En production: intégrer avec Stripe ici
+            // Pour la démo: simuler l'upgrade
+
+            return {
+                success: true,
+                message: 'Upgraded to ELITE plan successfully',
+                expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    // Vérifier l'accès aux fonctionnalités
+    async checkFeatureAccess(userId, feature) {
+        try {
+            const user = await clerkClient.users.getUser(userId);
+            const privateMetadata = user.privateMetadata || {};
+            const plan = privateMetadata.subscription_plan || 'FREE';
+
+            // Définir les features par plan
+            const planFeatures = {
+                'FREE': {
+                    basic_calculator: true,
+                    price_data: true,
+                    calculations_per_day: 3
+                },
+                'ELITE': {
+                    all_calculators: true,
+                    advanced_metrics: true,
+                    unlimited_calculations: true,
+                    ai_predictions: true,
+                    custom_strategies: true,
+                    api_access: true
+                }
+            };
+
+            return planFeatures[plan]?.[feature] || false;
+        } catch (error) {
+            console.error('Feature check error:', error);
+            return false;
+        }
+    }
+
+    // Mettre à jour les crédits
+    async updateCredits(userId, creditsChange) {
+        try {
+            const user = await clerkClient.users.getUser(userId);
+            const currentCredits = user.privateMetadata?.credits || 0;
+            const newCredits = Math.max(0, currentCredits + creditsChange);
+
+            await clerkClient.users.updateUser(userId, {
+                privateMetadata: {
+                    ...user.privateMetadata,
+                    credits: newCredits
+                }
+            });
+
+            return { success: true, newCredits };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
 }
 
-// Fonction pour créer un profil utilisateur
-async function createUserProfile(userId, email, userData = {}) {
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .insert([{
-        id: userId,
-        email: email,
-        username: userData.username || email.split('@')[0],
-        full_name: userData.full_name || '',
-        subscription_plan: 'free',
-        credits: 10
-      }])
-    
-    if (error) throw error
-    
-    // Créer aussi les crédits IA
-    await supabase
-      .from('ai_credits')
-      .insert([{
-        user_id: userId,
-        remaining_credits: 50
-      }])
-    
-    return { data, error }
-  } catch (error) {
-    console.error('Error creating user profile:', error)
-    return { data: null, error }
-  }
-}
+export default new AuthService();

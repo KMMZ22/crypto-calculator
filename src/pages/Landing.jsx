@@ -28,11 +28,15 @@ export default function TradeGuardLanding() {
   };
 
   const handleAuth = () => {
-    navigate('/auth?plan=free');
+    navigate('/login'); // ← CORRIGÉ pour le bouton "Connexion"
   };
 
   const handleSignup = (plan) => {
-    navigate(`/auth?plan=${plan.toLowerCase()}`);
+    if (plan && plan !== 'free') {
+      navigate('/signup?plan=' + plan.toLowerCase());
+    } else {
+      navigate('/signup');
+    }
   };
 
   return (

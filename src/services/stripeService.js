@@ -1,6 +1,5 @@
 // src/services/stripeService.js
 import { supabase } from '../lib/supabase';
-import { stripePromise, STRIPE_PLANS } from './stripeConfig';
 
 export const stripeService = {
   /**

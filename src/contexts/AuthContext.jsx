@@ -1,211 +1,84 @@
-// /src/contexts/AuthContext.jsx
-import React, { createContext, useContext, useEffect, useState } from 'react'
-// ⚠️ CORRECTION : Importe depuis le bon fichier
-import { authService } from '../services/authService' // si authService.js existe dans /src/services
-// OU
-// import { authService } from './authService' // si dans le même dossier
-// OU si tu n'as pas encore créé authService, utilise directement supabase :
-import { supabase } from '../lib/supabase'
+// src/contexts/AuthContext.jsx - VERSION ULTRA SIMPLE
+import { createContext, useContext, useEffect, useState } from 'react';
+import { useUser, useAuth } from '@clerk/clerk-react';
 
-// Version simplifiée sans authService
-const AuthContext = createContext({})
+const AuthContext = createContext({});
 
-export const useAuth = () => useContext(AuthContext)
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const { user, isLoaded, isSignedIn } = useUser();
+  const { signOut: clerkSignOut } = useAuth();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Vérifier l'utilisateur au chargement
-    checkUser()
-    
-    // Écouter les changements d'authentification
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔐 Auth event:', event, session?.user?.email)
-        
-        if (session?.user) {
-          setUser(session.user)
-          await fetchProfile(session.user.id)
-        } else {
-          setUser(null)
-          setProfile(null)
-        }
-        setLoading(false)
-      }
-    )
-    
-    return () => {
-      subscription.unsubscribe()
+    // Chargement initial
+    if (isLoaded) {
+      setLoading(false);
     }
-  }, [])
-
-  const checkUser = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      console.log('👤 Current user:', user?.email)
-      setUser(user)
-      if (user) {
-        await fetchProfile(user.id)
-      }
-    } catch (error) {
-      console.error('❌ Error checking user:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchProfile = async (userId) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single()
-      
-      if (error) {
-        console.error('Error fetching profile:', error)
-        // Peut-être le profil n'existe pas encore
-        if (error.code === 'PGRST116') {
-          console.log('Profile not found, will create later')
-        }
-      } else {
-        setProfile(data)
-        console.log('📋 Profile loaded:', data.email)
-      }
-    } catch (error) {
-      console.error('Error in fetchProfile:', error)
-    }
-  }
-
-  const signUp = async (email, password, userData = {}) => {
-    setLoading(true)
-    try {
-      console.log('📝 Signing up:', email)
-      
-      // 1. Créer l'utilisateur dans auth
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: userData
-        }
-      })
-      
-      if (error) throw error
-      
-      // 2. Créer le profil dans public.profiles
-      if (data.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([{
-            id: data.user.id,
-            email: email,
-            username: userData.username || email.split('@')[0],
-            full_name: userData.full_name || '',
-            subscription_plan: 'free',
-            credits: 10
-          }])
-        
-        if (profileError) {
-          console.error('Profile creation error:', profileError)
-          // Continue quand même - le profil peut être créé plus tard
-        }
-        
-        // 3. Créer les crédits IA
-        await supabase
-          .from('ai_credits')
-          .insert([{
-            user_id: data.user.id,
-            remaining_credits: 50
-          }])
-        
-        setUser(data.user)
-        await fetchProfile(data.user.id)
-      }
-      
-      return { data, error: null }
-    } catch (error) {
-      console.error('❌ Sign up error:', error)
-      return { data: null, error }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const signIn = async (email, password) => {
-    setLoading(true)
-    try {
-      console.log('🔑 Signing in:', email)
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      })
-      
-      if (error) throw error
-      
-      setUser(data.user)
-      await fetchProfile(data.user.id)
-      
-      return { data, error: null }
-    } catch (error) {
-      console.error('❌ Sign in error:', error)
-      return { data: null, error }
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [isLoaded]);
 
   const signOut = async () => {
-    setLoading(true)
     try {
-      await supabase.auth.signOut()
-      setUser(null)
-      setProfile(null)
-      console.log('👋 User signed out')
+      await clerkSignOut();
+      window.location.href = '/login';
     } catch (error) {
-      console.error('❌ Sign out error:', error)
-    } finally {
-      setLoading(false)
+      console.error('Erreur déconnexion:', error);
     }
-  }
+  };
 
-  const updateProfile = async (updates) => {
-    if (!user) return { error: 'No user' }
-    
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', user.id)
-      
-      if (error) throw error
-      
-      // Mettre à jour l'état local
-      setProfile(prev => ({ ...prev, ...updates }))
-      
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
-    }
-  }
+  // Récupérer le plan depuis les métadonnées Clerk
+  const getUserPlan = () => {
+    if (!user) return 'free';
+    return user.publicMetadata?.plan || 'free';
+  };
+
+  // Mettre à jour le plan (pour après paiement Stripe)
+  const updateUserPlan = async (newPlan) => {
+    // Cette fonction sera complétée plus tard
+    console.log('Plan mis à jour:', newPlan);
+    return { success: true };
+  };
 
   const value = {
-    user,
-    profile,
+    // État
+    user: user ? {
+      id: user.id,
+      email: user.primaryEmailAddress?.emailAddress,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      imageUrl: user.imageUrl,
+      publicMetadata: user.publicMetadata || {}
+    } : null,
+    
     loading,
-    signUp,
-    signIn,
+    isSignedIn,
+    
+    // Plan
+    userPlan: getUserPlan(),
+    updateUserPlan,
+    
+    // Fonctions
     signOut,
-    updateProfile,
-    refreshProfile: () => user && fetchProfile(user.id)
-  }
+    
+    // Vérification de plan
+    hasPlan: (requiredPlan) => {
+      const userPlan = getUserPlan();
+      const planHierarchy = {
+        'free': 0,
+        'pro_monthly': 1,
+        'pro_yearly': 1,
+        'elite_monthly': 2,
+        'elite_yearly': 2
+      };
+      
+      return (planHierarchy[userPlan] || 0) >= (planHierarchy[requiredPlan] || 0);
+    }
+  };
 
   return (
     <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
-  )
-}
+  );
+};

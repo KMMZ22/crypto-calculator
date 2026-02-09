@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { Shield, ArrowLeft, Check } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 // Initialiser Stripe
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 const CheckoutForm = ({ plan, priceId, isAnnual }) => {
   const stripe = useStripe();

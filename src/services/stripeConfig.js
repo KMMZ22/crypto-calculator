@@ -1,8 +1,6 @@
 // src/services/stripeConfig.js
-import { loadStripe } from '@stripe/stripe-js';
 
 // Initialiser Stripe avec votre clé publique
-export const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 // Configuration des plans avec leurs Price IDs
 export const STRIPE_PLANS = {
