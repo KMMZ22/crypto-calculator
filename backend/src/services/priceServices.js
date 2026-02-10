@@ -1,294 +1,110 @@
-import ccxt from 'ccxt';
-import NodeCache from 'node-cache';
+const axios = require('axios');
 
-// Cache pour performance
-const cache = new NodeCache({ stdTTL: 10, checkperiod: 120 });
-
-class AdvancedPriceService {
-    constructor() {
-        this.exchanges = {};
-        this.initExchanges();
-    }
-
-    initExchanges() {
-        try {
-            // Binance avec credentials optionnels
-            this.exchanges.binance = new ccxt.binance({
-                apiKey: process.env.BINANCE_API_KEY || '',
-                secret: process.env.BINANCE_API_SECRET || '',
-                enableRateLimit: true,
-                timeout: 10000,
-                options: {
-                    defaultType: 'spot',
-                    adjustForTimeDifference: true
-                }
-            });
-            console.log('✅ Binance API initialisée');
-        } catch (error) {
-            console.warn('⚠️ Binance init warning:', error.message);
+/**
+ * Get crypto prices from CoinGecko
+ */
+async function getCryptoPrices(symbols, currency = 'USD', usePremium = false) {
+  try {
+    const symbolList = symbols.split(',').map(s => s.trim().toLowerCase());
+    
+    if (usePremium && process.env.COINGECKO_API_KEY) {
+      // Use Pro API
+      const response = await axios.get('https://api.coingecko.com/api/v3/simple/price', {
+        params: {
+          ids: symbolList.join(','),
+          vs_currencies: currency.toLowerCase(),
+          include_market_cap: true,
+          include_24hr_vol: true,
+          include_24hr_change: true,
+          include_last_updated_at: true
+        },
+        headers: {
+          'x-cg-pro-api-key': process.env.COINGECKO_API_KEY
         }
-
-        try {
-            // Bybit
-            this.exchanges.bybit = new ccxt.bybit({
-                apiKey: process.env.BYBIT_API_KEY || '',
-                secret: process.env.BYBIT_API_SECRET || '',
-                enableRateLimit: true,
-                timeout: 10000
-            });
-            console.log('✅ Bybit API initialisée');
-        } catch (error) {
-            console.warn('⚠️ Bybit init warning:', error.message);
+      });
+      
+      return {
+        data: response.data,
+        source: 'coingecko_pro',
+        isRealTime: true
+      };
+    } else {
+      // Use Free API (public)
+      const response = await axios.get('https://api.coingecko.com/api/v3/simple/price', {
+        params: {
+          ids: symbolList.join(','),
+          vs_currencies: currency.toLowerCase()
         }
+      });
+      
+      return {
+        data: response.data,
+        source: 'coingecko_free',
+        isRealTime: false
+      };
     }
-
-    /**
-     * Récupère le prix d'un symbole avec fallback
-     */
-    async getPrice(symbol, exchangePreference = 'binance') {
-        const cacheKey = `price:${symbol}:${exchangePreference}`;
-        const cached = cache.get(cacheKey);
-        if (cached) return cached;
-
-        try {
-            let price = null;
-            let source = '';
-
-            // Essayer l'échange préféré d'abord
-            if (this.exchanges[exchangePreference]) {
-                try {
-                    const ticker = await this.exchanges[exchangePreference].fetchTicker(symbol);
-                    price = ticker.last;
-                    source = exchangePreference;
-                    console.log(`💰 ${symbol}: $${price} (${source})`);
-                } catch (error) {
-                    console.warn(`${exchangePreference} failed for ${symbol}:`, error.message);
-                }
-            }
-
-            // Fallback vers d'autres exchanges
-            if (!price) {
-                const otherExchanges = Object.keys(this.exchanges).filter(e => e !== exchangePreference);
-                for (const exchange of otherExchanges) {
-                    try {
-                        const ticker = await this.exchanges[exchange].fetchTicker(symbol);
-                        price = ticker.last;
-                        source = exchange;
-                        console.log(`🔄 ${symbol} from ${exchange} fallback: $${price}`);
-                        break;
-                    } catch (error) {
-                        continue;
-                    }
-                }
-            }
-
-            // Si tous les exchanges échouent, utiliser des APIs publiques
-            if (!price) {
-                price = await this.fetchFromPublicAPI(symbol);
-                source = 'public';
-            }
-
-            if (price) {
-                const result = { price, source, symbol, timestamp: new Date().toISOString() };
-                cache.set(cacheKey, result);
-                return result;
-            }
-
-            throw new Error(`Could not fetch price for ${symbol}`);
-
-        } catch (error) {
-            console.error(`❌ Price fetch error for ${symbol}:`, error.message);
-            
-            // Fallback mock
-            const mockPrice = this.getMockPrice(symbol);
-            return {
-                price: mockPrice,
-                source: 'mock',
-                symbol,
-                timestamp: new Date().toISOString(),
-                isMock: true
-            };
-        }
-    }
-
-    /**
-     * APIs publiques sans clé (fallback)
-     */
-    async fetchFromPublicAPI(symbol) {
-        try {
-            // Binance public API (no key needed)
-            const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`, {
-                timeout: 5000
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                return parseFloat(data.price);
-            }
-        } catch (error) {
-            console.log('Binance public API failed, trying Bybit...');
-        }
-
-        try {
-            // Bybit public API
-            const formattedSymbol = symbol.replace('USDT', 'USD');
-            const response = await fetch(`https://api.bybit.com/v2/public/tickers?symbol=${formattedSymbol}`, {
-                timeout: 5000
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                if (data.result && data.result[0]) {
-                    return parseFloat(data.result[0].last_price);
-                }
-            }
-        } catch (error) {
-            console.log('Bybit public API failed');
-        }
-
-        return null;
-    }
-
-    /**
-     * Récupère plusieurs prix en batch
-     */
-    async getMultiplePrices(symbols) {
-        const results = {};
-        const promises = symbols.map(async (symbol) => {
-            try {
-                const priceData = await this.getPrice(symbol);
-                results[symbol] = priceData;
-            } catch (error) {
-                results[symbol] = {
-                    price: this.getMockPrice(symbol),
-                    source: 'error',
-                    symbol,
-                    error: error.message
-                };
-            }
-        });
-
-        await Promise.all(promises);
-        return results;
-    }
-
-    /**
-     * Récupère le order book
-     */
-    async getOrderBook(symbol, limit = 20) {
-        const cacheKey = `orderbook:${symbol}:${limit}`;
-        const cached = cache.get(cacheKey);
-        if (cached) return cached;
-
-        try {
-            let orderBook = null;
-            
-            // Essayer Binance d'abord
-            if (this.exchanges.binance) {
-                orderBook = await this.exchanges.binance.fetchOrderBook(symbol, limit);
-            }
-            
-            if (!orderBook && this.exchanges.bybit) {
-                orderBook = await this.exchanges.bybit.fetchOrderBook(symbol, limit);
-            }
-
-            if (orderBook) {
-                cache.set(cacheKey, orderBook, 5); // Cache court pour order book
-                return orderBook;
-            }
-        } catch (error) {
-            console.error(`Order book error for ${symbol}:`, error.message);
-        }
-
-        return null;
-    }
-
-    /**
-     * Récupère les 24h stats
-     */
-    async get24hStats(symbol) {
-        const cacheKey = `24hstats:${symbol}`;
-        const cached = cache.get(cacheKey);
-        if (cached) return cached;
-
-        try {
-            let stats = null;
-            
-            if (this.exchanges.binance) {
-                const ticker = await this.exchanges.binance.fetchTicker(symbol);
-                stats = {
-                    high: ticker.high,
-                    low: ticker.low,
-                    volume: ticker.quoteVolume,
-                    change: ticker.percentage,
-                    changeAmount: ticker.change
-                };
-            }
-
-            if (stats) {
-                cache.set(cacheKey, stats, 30); // 30 secondes cache
-                return stats;
-            }
-        } catch (error) {
-            console.error(`24h stats error for ${symbol}:`, error.message);
-        }
-
-        return null;
-    }
-
-    /**
-     * Liste des symboles supportés
-     */
-    async getAvailableSymbols(exchange = 'binance') {
-        if (this.exchanges[exchange]) {
-            try {
-                await this.exchanges[exchange].loadMarkets();
-                const symbols = Object.keys(this.exchanges[exchange].markets)
-                    .filter(s => s.includes('USDT'))
-                    .slice(0, 50); // Limiter à 50
-                return symbols;
-            } catch (error) {
-                console.error(`Error loading markets for ${exchange}:`, error.message);
-            }
-        }
-        
-        // Fallback
-        return [
-            'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT',
-            'ADAUSDT', 'DOGEUSDT', 'DOTUSDT', 'MATICUSDT', 'AVAXUSDT'
-        ];
-    }
-
-    /**
-     * Prix mock pour développement
-     */
-    getMockPrice(symbol) {
-        const basePrices = {
-            'BTCUSDT': 45000,
-            'ETHUSDT': 2500,
-            'BNBUSDT': 300,
-            'SOLUSDT': 100,
-            'XRPUSDT': 0.5,
-            'ADAUSDT': 0.4,
-            'DOGEUSDT': 0.08,
-            'DOTUSDT': 7,
-            'MATICUSDT': 0.8,
-            'AVAXUSDT': 35
-        };
-        
-        const base = basePrices[symbol] || 100;
-        // Ajouter un peu de variation réaliste
-        const variation = (Math.random() * 0.02) - 0.01; // ±1%
-        return base * (1 + variation);
-    }
-
-    /**
-     * Vider le cache
-     */
-    clearCache() {
-        cache.flushAll();
-        console.log('🧹 Cache cleared');
-    }
+  } catch (error) {
+    console.error('CoinGecko API error:', error.message);
+    
+    // Fallback to mock data
+    return getMockCryptoPrices(symbols, currency);
+  }
 }
 
-export default new AdvancedPriceService();
+/**
+ * Get mock crypto prices (fallback)
+ */
+function getMockCryptoPrices(symbols, currency = 'USD') {
+  const symbolList = symbols.split(',').map(s => s.trim().toLowerCase());
+  
+  const mockPrices = {
+    btc: {
+      usd: 45000 + Math.random() * 1000,
+      eur: 41000 + Math.random() * 900,
+      gbp: 35000 + Math.random() * 800
+    },
+    eth: {
+      usd: 2500 + Math.random() * 100,
+      eur: 2300 + Math.random() * 90,
+      gbp: 2000 + Math.random() * 80
+    },
+    bnb: {
+      usd: 300 + Math.random() * 10,
+      eur: 280 + Math.random() * 9,
+      gbp: 240 + Math.random() * 8
+    },
+    sol: {
+      usd: 100 + Math.random() * 5,
+      eur: 92 + Math.random() * 4,
+      gbp: 78 + Math.random() * 3
+    },
+    xrp: {
+      usd: 0.5 + Math.random() * 0.1,
+      eur: 0.46 + Math.random() * 0.09,
+      gbp: 0.39 + Math.random() * 0.08
+    }
+  };
+  
+  const result = {};
+  symbolList.forEach(symbol => {
+    if (mockPrices[symbol]) {
+      const price = mockPrices[symbol][currency.toLowerCase()] || mockPrices[symbol].usd;
+      result[symbol] = {
+        [currency.toLowerCase()]: price,
+        source: 'mock',
+        isRealTime: false
+      };
+    }
+  });
+  
+  return {
+    data: result,
+    source: 'mock',
+    isRealTime: false
+  };
+}
+
+module.exports = {
+  getCryptoPrices,
+  getMockCryptoPrices
+};
