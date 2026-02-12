@@ -1,8 +1,4 @@
-// src/services/stripeConfig.js
 
-// Initialiser Stripe avec votre clé publique
-
-// Configuration des plans avec leurs Price IDs
 export const STRIPE_PLANS = {
   PRO: {
     name: 'TradeGuard Pro',

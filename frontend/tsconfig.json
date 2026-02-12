@@ -1,0 +1,67 @@
+{
+  "compilerOptions": {
+    /* Target JavaScript */
+    "target": "ESNext",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler Mode (Vite) */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    
+    /* JSX Support */
+    "jsx": "react-jsx",
+    
+    /* Type Checking - Strict but Practical */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "useUnknownInCatchVariables": true,  // Important pour vos erreurs Supabase
+    
+    /* JavaScript Compatibility */
+    "allowJs": true,  // CRITICAL - 95% de votre code est en .js/.jsx
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    
+    /* Paths & Environment */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    
+    /* Vite Environment Support */
+    "types": ["vite/client"],  // Pour import.meta.env
+    
+    /* Performance & Compatibility */
+    "forceConsistentCasingInFileNames": true,
+    "incremental": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true
+  },
+  
+  /* Inclusion */
+  "include": [
+    "src",
+    "src/**/*.js",
+    "src/**/*.jsx", 
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "vite.config.ts",
+    "vite.config.js"
+  ],
+  
+  /* Exclusion */
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "backend",               // Exclure le backend
+    "supabase/functions",    // Exclure les fonctions Deno
+    "server"                 // Exclure le dossier server
+  ]
+}

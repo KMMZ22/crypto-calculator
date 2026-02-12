@@ -1,5 +1,5 @@
 // services/authService.js
-import { clerkClient } from '@clerk/backend';
+import { supabase } from '../lib/supabase';
 
 class AuthService {
     // Inscription via Clerk (le frontend gère l'UI)

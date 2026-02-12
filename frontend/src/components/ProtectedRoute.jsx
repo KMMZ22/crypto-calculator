@@ -1,22 +1,29 @@
-// src/components/ProtectedRoute.jsx - VERSION SIMPLE
+// src/components/ProtectedRoute.jsx
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { SignedIn, SignedOut } from '@clerk/clerk-react';
+import { useAuth } from '../contexts/AuthContext';
 
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, requiredPlan }) => {
   const location = useLocation();
+  const { user, loading, hasPlan } = useAuth();
 
-  return (
-    <>
-      <SignedIn>
-        {children}
-      </SignedIn>
-      
-      <SignedOut>
-        <Navigate to="/login" state={{ from: location.pathname }} replace />
-      </SignedOut>
-    </>
-  );
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="text-white">Chargement...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
+
+  if (requiredPlan && !hasPlan(requiredPlan)) {
+    return <Navigate to="/select-plan" replace />;
+  }
+
+  return children;
 };
 
 export default ProtectedRoute;

@@ -1,8 +1,8 @@
 // Dans ton SelectPlan.jsx existant - AJOUTER CES CHANGEMENTS
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Check, ArrowRight, Zap, TrendingUp, Lock } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
+import { Shield, Check, ArrowRight, Zap, TrendingUp, Lock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext'; // AJOUTER CET IMPORT
 
 // Initialiser Stripe

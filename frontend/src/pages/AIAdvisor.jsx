@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { analyzeTrade, getMarketConditions, getTradeHistory } from '../services/aiAdvisorService';
 import { supabase } from '../lib/supabase';

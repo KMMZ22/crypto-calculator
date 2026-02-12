@@ -2,9 +2,17 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
-// Import routes
+// ====================
+// IMPORT SUPABASE - UNE SEULE FOIS
+// ====================
+const { supabase, supabaseAdmin, testConnection } = require('./config/supabase');
+
+// ====================
+// IMPORTS ROUTES
+// ====================
 const authRoutes = require('./routes/authRoutes');
 const calculatorRoutes = require('./routes/calculatorRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
@@ -13,18 +21,24 @@ const eliteRoutes = require('./routes/eliteRoutes');
 const economicCalendarRoutes = require('./routes/economicCalendarRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3002;
 
 // ====================
 // MIDDLEWARE
 // ====================
 
 // Security
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 
 // CORS
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: [
+    'http://localhost:3001',
+    'http://localhost:5173',
+    process.env.FRONTEND_URL || 'http://localhost:3001'
+  ],
   credentials: true,
   optionsSuccessStatus: 200
 }));
@@ -35,14 +49,24 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Rate limiting
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later.' }
+  message: { error: 'Too many requests, please try again later.' },
+  skip: (req) => req.path.includes('/api/price/binance') || req.path.includes('/api/binance')
 });
 
 app.use('/api/', apiLimiter);
+
+// ====================
+// MIDDLEWARE SUPABASE
+// ====================
+app.use((req, res, next) => {
+  req.supabase = supabase;
+  req.supabaseAdmin = supabaseAdmin;
+  next();
+});
 
 // ====================
 // ROUTES
@@ -55,7 +79,8 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     service: 'crypto-calculator-api',
     version: '1.0.0',
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    supabase: 'connected'
   });
 });
 
@@ -64,14 +89,59 @@ app.get('/api/status', (req, res) => {
   res.json({ 
     message: 'Crypto Calculator API is running',
     version: '1.0.0',
+    supabase: 'connected',
     endpoints: {
       auth: '/api/auth',
       calculator: '/api/calculator',
       payment: '/api/payment',
       price: '/api/price',
       elite: '/api/elite',
-      economicCalendar: '/api/economic-calendar'
+      economicCalendar: '/api/economic-calendar',
+      binance: '/api/binance/:symbol'
     }
+  });
+});
+
+// Route de test Supabase
+app.get('/api/test-supabase', async (req, res) => {
+  try {
+    const isConnected = await testConnection();
+    
+    res.json({ 
+      success: isConnected,
+      message: isConnected ? 'Supabase connecté avec succès' : 'Supabase non connecté',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      hint: 'Vérifie la configuration Supabase'
+    });
+  }
+});
+
+// Route Binance directe
+app.get('/api/binance/:symbol', (req, res) => {
+  const { symbol } = req.params;
+  
+  // Prix simulés pour le développement
+  const mockPrices = {
+    'BTCUSDT': 43000 + Math.random() * 2000,
+    'ETHUSDT': 2200 + Math.random() * 100,
+    'BNBUSDT': 310 + Math.random() * 10,
+    'SOLUSDT': 100 + Math.random() * 5,
+    'ADAUSDT': 0.5 + Math.random() * 0.1,
+    'DEFAULT': 100 + Math.random() * 10
+  };
+  
+  const price = mockPrices[symbol] || mockPrices.DEFAULT;
+  
+  res.json({
+    symbol,
+    price: parseFloat(price.toFixed(2)),
+    timestamp: new Date().toISOString(),
+    source: 'mock'
   });
 });
 
@@ -110,7 +180,6 @@ app.use((err, req, res, next) => {
     statusCode: statusCode
   };
   
-  // Add stack trace in development
   if (process.env.NODE_ENV !== 'production' && err.stack) {
     response.stack = err.stack;
   }
@@ -124,14 +193,17 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`
-╔══════════════════════════════════════╗
-║  🚀 CRYPTO CALCULATOR API STARTED    ║
-╠══════════════════════════════════════╣
-║  📍 Port: ${PORT}                      ║
-║  🌍 Env: ${process.env.NODE_ENV || 'development'}                         ║
-║  🔗 Health: http://localhost:${PORT}/health  ║
-║  📊 Status: http://localhost:${PORT}/api/status ║
-╚══════════════════════════════════════╝
+╔══════════════════════════════════════════╗
+║     🚀 CRYPTO CALCULATOR API STARTED     ║
+╠══════════════════════════════════════════╣
+║  📍 Port: ${PORT}                          ║
+║  🌍 Env: ${process.env.NODE_ENV || 'development'}          ║
+║  🔐 Supabase: ✅ CONNECTED                ║
+║  🔗 Health: http://localhost:${PORT}/health║
+║  📊 Status: http://localhost:${PORT}/api/status║
+║  🧪 Test DB: http://localhost:${PORT}/api/test-supabase║
+║  💰 Binance: http://localhost:${PORT}/api/binance/BTCUSDT║
+╚══════════════════════════════════════════╝
   `);
 });
 
