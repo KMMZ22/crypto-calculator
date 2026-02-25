@@ -6,7 +6,7 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 // ====================
-// IMPORT SUPABASE - UNE SEULE FOIS
+// IMPORT SUPABASE
 // ====================
 const { supabase, supabaseAdmin, testConnection } = require('./config/supabase');
 
@@ -18,7 +18,9 @@ const calculatorRoutes = require('./routes/calculatorRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const priceRoutes = require('./routes/priceRoutes');
 const eliteRoutes = require('./routes/eliteRoutes');
-const economicCalendarRoutes = require('./routes/economicCalendarRoutes');
+const priceProxyRoutes = require('./routes/priceProxyRoutes');      // Proxy Twelve Data pour les prix
+const economicCalendarFMP = require('./routes/economicCalendarFMP');
+const chartAnalysisRoutes = require('./routes/chartAnalysisRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -86,7 +88,7 @@ app.get('/health', (req, res) => {
 
 // API status
 app.get('/api/status', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'Crypto Calculator API is running',
     version: '1.0.0',
     supabase: 'connected',
@@ -97,6 +99,7 @@ app.get('/api/status', (req, res) => {
       price: '/api/price',
       elite: '/api/elite',
       economicCalendar: '/api/economic-calendar',
+      priceProxy: '/api/price-proxy',
       binance: '/api/binance/:symbol'
     }
   });
@@ -106,26 +109,23 @@ app.get('/api/status', (req, res) => {
 app.get('/api/test-supabase', async (req, res) => {
   try {
     const isConnected = await testConnection();
-    
-    res.json({ 
+    res.json({
       success: isConnected,
       message: isConnected ? 'Supabase connecté avec succès' : 'Supabase non connecté',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: error.message,
       hint: 'Vérifie la configuration Supabase'
     });
   }
 });
 
-// Route Binance directe
+// Route Binance directe (mock)
 app.get('/api/binance/:symbol', (req, res) => {
   const { symbol } = req.params;
-  
-  // Prix simulés pour le développement
   const mockPrices = {
     'BTCUSDT': 43000 + Math.random() * 2000,
     'ETHUSDT': 2200 + Math.random() * 100,
@@ -134,9 +134,7 @@ app.get('/api/binance/:symbol', (req, res) => {
     'ADAUSDT': 0.5 + Math.random() * 0.1,
     'DEFAULT': 100 + Math.random() * 10
   };
-  
   const price = mockPrices[symbol] || mockPrices.DEFAULT;
-  
   res.json({
     symbol,
     price: parseFloat(price.toFixed(2)),
@@ -145,21 +143,24 @@ app.get('/api/binance/:symbol', (req, res) => {
   });
 });
 
-// API routes
+// ====================
+// MONTAGE DES ROUTES API
+// ====================
 app.use('/api/auth', authRoutes);
 app.use('/api/calculator', calculatorRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/price', priceRoutes);
 app.use('/api/elite', eliteRoutes);
-app.use('/api/economic-calendar', economicCalendarRoutes);
-
+app.use('/api/price-proxy', priceProxyRoutes);
+app.use('/api/economic-calendar', economicCalendarFMP);
+app.use('/api/chart-analysis', chartAnalysisRoutes);
 // ====================
 // ERROR HANDLING
 // ====================
 
 // 404 handler
 app.use('*', (req, res) => {
-  res.status(404).json({ 
+  res.status(404).json({
     error: 'Route not found',
     path: req.originalUrl,
     method: req.method
@@ -169,21 +170,17 @@ app.use('*', (req, res) => {
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('🔥 Server error:', err);
-  
   const statusCode = err.statusCode || 500;
-  const message = process.env.NODE_ENV === 'production' 
-    ? 'Internal server error' 
+  const message = process.env.NODE_ENV === 'production'
+    ? 'Internal server error'
     : err.message;
-  
   const response = {
     error: message,
     statusCode: statusCode
   };
-  
   if (process.env.NODE_ENV !== 'production' && err.stack) {
     response.stack = err.stack;
   }
-  
   res.status(statusCode).json(response);
 });
 

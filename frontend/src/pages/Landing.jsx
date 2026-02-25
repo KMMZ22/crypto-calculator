@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, ArrowRight, Check, TrendingUp, BarChart3, Lock, Zap, ChevronDown, Star, Sparkles, Award, Globe } from 'lucide-react';
+import LiquidEther from '../components/LiquidEther';
+import SplitText from '../components/SplitText';
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -268,17 +270,31 @@ export default function Landing() {
   ];
 
   return (
-    <div className="bg-black text-white min-h-screen overflow-x-hidden">
-      {/* Gradient animé en arrière-plan */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(34,197,94,0.05),transparent_50%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(59,130,246,0.03),transparent_50%)]"></div>
+    <div className="bg-transparent text-white min-h-screen overflow-x-hidden">
+      {/* Liquid Ether animated background */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: -10, pointerEvents: 'none', width: '100vw', height: '100vh' }}>
+        <LiquidEther
+          colors={['#5227FF', '#FF9FFC', '#B19EEF']}
+          mouseForce={20}
+          cursorSize={100}
+          isViscous
+          viscous={30}
+          resolution={0.5}
+          autoDemo
+          autoSpeed={0.5}
+          autoIntensity={2.2}
+          takeoverDuration={0.25}
+          autoResumeDelay={3000}
+          autoRampDuration={0.6}
+          style={{ width: '100%', height: '100%' }}
+        />
+        {/* light overlay to keep text readable */}
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)' }} />
       </div>
 
       {/* Navigation avec sélecteur de langue */}
-      <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${
-        scrollY > 50 ? 'bg-black/90 backdrop-blur-xl border-b border-gray-800/50 shadow-lg shadow-black/20' : 'bg-transparent border-b border-gray-900/50'
-      }`}>
+      <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${scrollY > 50 ? 'bg-black/90 backdrop-blur-xl border-b border-gray-800/50 shadow-lg shadow-black/20' : 'bg-transparent border-b border-gray-900/50'
+        }`}>
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2">
@@ -295,7 +311,7 @@ export default function Landing() {
                 TradeGuard
               </span>
             </div>
-            
+
             <div className="hidden md:flex items-center gap-8 text-sm">
               <a href="#features" className="text-gray-400 hover:text-white transition-colors">{t.features}</a>
               <a href="#pricing" className="text-gray-400 hover:text-white transition-colors">{t.pricing}</a>
@@ -313,17 +329,16 @@ export default function Landing() {
                   <span className="text-sm uppercase">{language}</span>
                   <ChevronDown size={14} className={`transition-transform ${showLanguageMenu ? 'rotate-180' : ''}`} />
                 </button>
-                
+
                 {showLanguageMenu && (
-                  <div 
+                  <div
                     className="absolute right-0 mt-2 w-32 bg-gray-900 border border-gray-800 rounded-lg shadow-xl backdrop-blur-xl z-50"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button
                       onClick={() => changeLanguage('fr')}
-                      className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-800 transition-colors flex items-center gap-2 ${
-                        language === 'fr' ? 'text-green-500 bg-gray-800/50' : 'text-gray-300'
-                      }`}
+                      className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-800 transition-colors flex items-center gap-2 ${language === 'fr' ? 'text-green-500 bg-gray-800/50' : 'text-gray-300'
+                        }`}
                     >
                       <span className="text-base">🇫🇷</span>
                       <span>Français</span>
@@ -331,9 +346,8 @@ export default function Landing() {
                     </button>
                     <button
                       onClick={() => changeLanguage('en')}
-                      className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-800 transition-colors flex items-center gap-2 ${
-                        language === 'en' ? 'text-green-500 bg-gray-800/50' : 'text-gray-300'
-                      }`}
+                      className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-800 transition-colors flex items-center gap-2 ${language === 'en' ? 'text-green-500 bg-gray-800/50' : 'text-gray-300'
+                        }`}
                     >
                       <span className="text-base">🇬🇧</span>
                       <span>English</span>
@@ -343,14 +357,14 @@ export default function Landing() {
                 )}
               </div>
 
-              <button 
+              <button
                 onClick={handleLogin}
                 className="px-5 py-2 text-gray-400 text-sm font-medium hover:text-white transition-colors"
               >
                 {t.login}
               </button>
               <div className="w-px h-4 bg-gray-700"></div>
-              <button 
+              <button
                 onClick={handleSignup}
                 className="group relative px-5 py-2 bg-white text-black text-sm font-medium rounded-lg overflow-hidden transition-all hover:shadow-lg hover:shadow-white/20"
               >
@@ -372,18 +386,42 @@ export default function Landing() {
               <Sparkles size={14} className="text-green-500" />
             </div>
 
-            <h1 className="text-6xl lg:text-7xl font-extrabold tracking-tight mb-6 leading-none animate-fade-in-up">
-              {t.heroTitle}<br/>
-              <span className="bg-gradient-to-r from-gray-500 via-gray-400 to-gray-500 bg-clip-text text-transparent">
-                {t.heroSubtitle}
-              </span>
+            <h1 className="text-6xl lg:text-7xl font-extrabold tracking-tight mb-6 leading-none">
+              <SplitText
+                text={t.heroTitle}
+                tag="span"
+                className="block text-white"
+                splitType="chars"
+                delay={35}
+                duration={0.9}
+                ease="power3.out"
+                from={{ opacity: 0, y: 60, rotateX: -15 }}
+                to={{ opacity: 1, y: 0, rotateX: 0 }}
+                textAlign="left"
+                threshold={0.2}
+                rootMargin="0px"
+              />
+              <SplitText
+                text={t.heroSubtitle}
+                tag="span"
+                className="block text-gray-400"
+                splitType="chars"
+                delay={30}
+                duration={0.9}
+                ease="power3.out"
+                from={{ opacity: 0, y: 60 }}
+                to={{ opacity: 1, y: 0 }}
+                textAlign="left"
+                threshold={0.2}
+                rootMargin="0px"
+              />
             </h1>
 
             <p className="text-xl text-gray-400 mb-10 leading-relaxed max-w-2xl animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
               {t.heroDesc}
             </p>
 
-            <button 
+            <button
               onClick={handleTryFree}
               className="group relative px-8 py-4 bg-white text-black font-semibold rounded-lg overflow-hidden transition-all hover:shadow-2xl hover:shadow-white/20 flex items-center justify-center gap-2 w-full sm:w-auto animate-fade-in-up"
               style={{ animationDelay: '0.2s' }}
@@ -590,16 +628,14 @@ export default function Landing() {
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 bg-black/50 backdrop-blur-sm px-3 py-2 rounded-full border border-gray-800">
               <button
                 onClick={() => setActiveScreen(0)}
-                className={`h-2 rounded-full transition-all ${
-                  activeScreen === 0 ? 'w-8 bg-white shadow-lg shadow-white/50' : 'w-2 bg-gray-600 hover:bg-gray-500'
-                }`}
+                className={`h-2 rounded-full transition-all ${activeScreen === 0 ? 'w-8 bg-white shadow-lg shadow-white/50' : 'w-2 bg-gray-600 hover:bg-gray-500'
+                  }`}
                 aria-label="Voir le dashboard"
               />
               <button
                 onClick={() => setActiveScreen(1)}
-                className={`h-2 rounded-full transition-all ${
-                  activeScreen === 1 ? 'w-8 bg-white shadow-lg shadow-white/50' : 'w-2 bg-gray-600 hover:bg-gray-500'
-                }`}
+                className={`h-2 rounded-full transition-all ${activeScreen === 1 ? 'w-8 bg-white shadow-lg shadow-white/50' : 'w-2 bg-gray-600 hover:bg-gray-500'
+                  }`}
                 aria-label="Voir le calculateur"
               />
             </div>
@@ -613,7 +649,7 @@ export default function Landing() {
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <h2 className="text-sm uppercase tracking-wider text-gray-500 mb-4">{t.problem}</h2>
           <p className="text-3xl lg:text-4xl font-bold mb-12 leading-tight">
-            {t.problemTitle}<br/>
+            {t.problemTitle}<br />
             <span className="bg-gradient-to-r from-red-500 to-red-600 bg-clip-text text-transparent">
               {t.problemHighlight}
             </span>
@@ -643,7 +679,7 @@ export default function Landing() {
           <div className="max-w-2xl mb-16">
             <h2 className="text-sm uppercase tracking-wider text-gray-500 mb-4">{t.features}</h2>
             <p className="text-4xl lg:text-5xl font-bold leading-tight">
-              {t.featuresTitle}<br/>
+              {t.featuresTitle}<br />
               <span className="bg-gradient-to-r from-gray-500 to-gray-600 bg-clip-text text-transparent">
                 {t.featuresSubtitle}
               </span>
@@ -737,7 +773,7 @@ export default function Landing() {
                   <span className="text-gray-400">{t.free4}</span>
                 </li>
               </ul>
-              <button 
+              <button
                 onClick={handleStartFree}
                 className="w-full py-3 border border-gray-800 rounded-lg hover:border-gray-700 hover:bg-gray-900 transition font-medium"
               >
@@ -779,7 +815,7 @@ export default function Landing() {
                     <span><strong>{t.pro5}</strong></span>
                   </li>
                 </ul>
-                <button 
+                <button
                   onClick={() => handleSignupWithPlan('PRO')}
                   className="w-full py-3 bg-black text-white rounded-lg hover:bg-gray-900 transition font-medium shadow-lg"
                 >
@@ -819,7 +855,7 @@ export default function Landing() {
                   <span className="text-gray-400"><strong>{t.elite4}</strong></span>
                 </li>
               </ul>
-              <button 
+              <button
                 onClick={() => handleSignupWithPlan('ELITE')}
                 className="w-full py-3 border border-gray-800 rounded-lg hover:border-purple-500/50 hover:bg-purple-500/5 transition font-medium"
               >
@@ -899,8 +935,8 @@ export default function Landing() {
 
           <div className="space-y-4">
             {faqs.map((faq, index) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="border border-gray-800 rounded-xl overflow-hidden hover:border-gray-700 transition-all"
               >
                 <button
@@ -908,17 +944,15 @@ export default function Landing() {
                   className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-gray-900/30 transition-colors"
                 >
                   <span className="font-semibold text-white pr-8">{faq.question}</span>
-                  <ChevronDown 
-                    size={20} 
-                    className={`flex-shrink-0 text-gray-400 transition-transform ${
-                      faqOpen === index ? 'rotate-180' : ''
-                    }`}
+                  <ChevronDown
+                    size={20}
+                    className={`flex-shrink-0 text-gray-400 transition-transform ${faqOpen === index ? 'rotate-180' : ''
+                      }`}
                   />
                 </button>
-                <div 
-                  className={`overflow-hidden transition-all duration-300 ${
-                    faqOpen === index ? 'max-h-96' : 'max-h-0'
-                  }`}
+                <div
+                  className={`overflow-hidden transition-all duration-300 ${faqOpen === index ? 'max-h-96' : 'max-h-0'
+                    }`}
                 >
                   <div className="px-6 pb-5 text-gray-400 leading-relaxed">
                     {faq.answer}
@@ -930,8 +964,8 @@ export default function Landing() {
 
           <div className="mt-12 text-center">
             <p className="text-gray-400 mb-4">Vous avez d'autres questions ?</p>
-            <a 
-              href="mailto:support@tradeguard.com" 
+            <a
+              href="mailto:support@tradeguard.com"
               className="inline-flex items-center gap-2 text-green-500 hover:text-green-400 transition-colors font-medium"
             >
               Contactez notre support
@@ -950,7 +984,7 @@ export default function Landing() {
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <h2 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight">{t.cta}</h2>
           <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">{t.ctaDesc}</p>
-          <button 
+          <button
             onClick={handleStartFree}
             className="group relative px-10 py-5 bg-white text-black font-semibold text-lg rounded-lg overflow-hidden transition-all hover:shadow-2xl hover:shadow-white/30"
           >
@@ -982,7 +1016,7 @@ export default function Landing() {
               </div>
               <p className="text-sm text-gray-500 leading-relaxed">{t.footer}</p>
             </div>
-            
+
             <div>
               <h4 className="font-semibold mb-4 text-sm">{t.product}</h4>
               <ul className="space-y-2 text-sm text-gray-500">
@@ -992,7 +1026,7 @@ export default function Landing() {
                 <li><a href="#" className="hover:text-white transition-colors">Roadmap</a></li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="font-semibold mb-4 text-sm">{t.resources}</h4>
               <ul className="space-y-2 text-sm text-gray-500">
@@ -1002,7 +1036,7 @@ export default function Landing() {
                 <li><a href="#" className="hover:text-white transition-colors">{t.support}</a></li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="font-semibold mb-4 text-sm">{t.legal}</h4>
               <ul className="space-y-2 text-sm text-gray-500">
@@ -1012,7 +1046,7 @@ export default function Landing() {
               </ul>
             </div>
           </div>
-          
+
           <div className="pt-8 border-t border-gray-900 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500">
             <p>© 2024 TradeGuard. {t.rights}</p>
             <div className="flex items-center gap-6">
@@ -1023,32 +1057,32 @@ export default function Landing() {
       </footer>
 
       {/* Styles pour les animations */}
-      <style jsx>{`
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        
-        @keyframes fade-in-up {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        .animate-fade-in {
-          animation: fade-in 0.6s ease-out;
-        }
-        
-        .animate-fade-in-up {
-          animation: fade-in-up 0.6s ease-out;
-          animation-fill-mode: both;
-        }
-      `}</style>
+      <style>{`
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-fade-in {
+    animation: fade-in 0.6s ease-out;
+  }
+  
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s ease-out;
+    animation-fill-mode: both;
+  }
+`}</style>
     </div>
   );
 }

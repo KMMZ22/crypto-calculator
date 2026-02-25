@@ -1,5 +1,5 @@
-// src/pages/Login.jsx - VERSION CORRIGÉE (thème noir/blanc/vert)
-import React, { useState, useEffect } from 'react';
+// src/pages/Login.jsx - VERSION COMPLÈTE ET CORRIGÉE
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -10,13 +10,44 @@ const Login = () => {
   const { user, login } = useAuth();
   const [language, setLanguage] = useState('fr');
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  
+  // useRef pour éviter les redirections multiples
+  const hasRedirected = useRef(false);
 
+  // =====================================================
+  // GESTION DES UPGRADES EN ATTENTE
+  // =====================================================
   useEffect(() => {
-    if (user) {
-      navigate('/dashboard');
+    if (user && !hasRedirected.current) {
+      hasRedirected.current = true;
+      
+      const pending = localStorage.getItem('pending_upgrade');
+      if (pending) {
+        try {
+          const { plan, sessionId } = JSON.parse(pending);
+          console.log('🔄 Upgrade en attente détecté:', plan);
+          localStorage.removeItem('pending_upgrade');
+          navigate(`/stripe-success?plan=${plan}&session_id=${sessionId || ''}`);
+        } catch (e) {
+          console.error('❌ Erreur parsing pending upgrade:', e);
+          navigate('/dashboard');
+        }
+      } else {
+        navigate('/dashboard');
+      }
     }
   }, [user, navigate]);
 
+  // =====================================================
+  // FERMETURE DU MENU LANGUE EN CLIQUANT AILLEURS
+  // =====================================================
   useEffect(() => {
     const handleClickOutside = () => {
       if (showLanguageMenu) setShowLanguageMenu(false);
@@ -24,15 +55,6 @@ const Login = () => {
     window.addEventListener('click', handleClickOutside);
     return () => window.removeEventListener('click', handleClickOutside);
   }, [showLanguageMenu]);
-
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-  
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [showResetPassword, setShowResetPassword] = useState(false);
 
   const toggleLanguageMenu = (e) => {
     e.stopPropagation();
@@ -44,7 +66,9 @@ const Login = () => {
     setShowLanguageMenu(false);
   };
 
-  // ✅ TRADUCTIONS - Thème noir/blanc
+  // =====================================================
+  // TRADUCTIONS
+  // =====================================================
   const t = {
     fr: {
       login: "Connexion",
@@ -105,12 +129,23 @@ const Login = () => {
     setLoading(true);
 
     try {
-      await login(formData.email, formData.password);
-      navigate('/dashboard');
+      console.log('🔵 1. Tentative connexion');
+      const result = await login(formData.email, formData.password);
+      console.log('🟢 2. Résultat:', result);
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      console.log('✅ 3. Succès - user va être mis à jour');
+      // La redirection est gérée dans le useEffect
+      
     } catch (err) {
-      console.error('Erreur connexion:', err);
+      console.error('🔴 4. Erreur:', err);
+
+      console.error('❌ Erreur connexion:', err);
       setError(err.message || (language === 'fr' ? 'Email ou mot de passe incorrect' : 'Invalid email or password'));
     } finally {
+      console.log('⚪ 5. Loading false');
       setLoading(false);
     }
   };
@@ -125,7 +160,7 @@ const Login = () => {
       });
       if (error) throw error;
     } catch (err) {
-      console.error('Erreur Google login:', err);
+      console.error('❌ Erreur Google login:', err);
       setError(err.message || (language === 'fr' ? 'Erreur lors de la connexion Google' : 'Google login error'));
     }
   };
@@ -145,18 +180,21 @@ const Login = () => {
       setError(lang.emailSent);
       setShowResetPassword(false);
     } catch (err) {
-      console.error('Erreur reset password:', err);
+      console.error('❌ Erreur reset password:', err);
       setError(err.message || (language === 'fr' ? 'Erreur lors de l\'envoi' : 'Error sending email'));
     } finally {
       setLoading(false);
     }
   };
 
+  // =====================================================
+  // RENDU JSX
+  // =====================================================
   return (
     <div className="min-h-screen bg-black text-white py-12 px-4">
       <div className="max-w-md mx-auto">
         
-        {/* ✅ BOUTON RETOUR + SÉLECTEUR LANGUE */}
+        {/* Bouton retour + sélecteur langue */}
         <div className="flex justify-between items-center mb-4">
           <button
             onClick={() => navigate('/')}
@@ -206,7 +244,7 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Header - SANS badge Supabase */}
+        {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <div className="relative group">
@@ -227,7 +265,7 @@ const Login = () => {
           <p className="text-gray-400">{lang.subtitle}</p>
         </div>
 
-        {/* Carte de formulaire - Style noir/blanc/gris */}
+        {/* Carte de formulaire */}
         <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-800">
           {showResetPassword ? (
             <div className="space-y-6">
@@ -277,7 +315,7 @@ const Login = () => {
             </div>
           ) : (
             <>
-              {/* Google Button - Style noir */}
+              {/* Google Button */}
               <button
                 onClick={handleGoogleLogin}
                 className="w-full mb-6 py-3 bg-black hover:bg-gray-900 border border-gray-800 rounded-xl font-medium flex items-center justify-center transition-colors text-gray-300"
@@ -375,7 +413,7 @@ const Login = () => {
           )}
         </div>
 
-        {/* Features - Style noir/blanc */}
+        {/* Features */}
         <div className="mt-8 grid grid-cols-3 gap-4">
           <div className="text-center p-3 bg-gray-900/30 rounded-xl border border-gray-800">
             <div className="w-6 h-6 bg-gray-800 rounded-lg flex items-center justify-center mx-auto mb-1">

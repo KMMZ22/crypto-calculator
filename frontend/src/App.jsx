@@ -8,6 +8,7 @@ import './App.css';
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
 
+
 // Pages
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -21,12 +22,15 @@ import PnLCalculator from './pages/PnLCalculator';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Success from './pages/Success';
+import StripeSuccess from './pages/StripeSuccess';
+import ChartPage from './pages/Chart';
+import ChartAnalysis from './pages/ChartAnalysis';
+
 
 function App() {
   return (
     // ✅ Router DOIT être le parent IMMÉDIAT de tout ce qui utilise useNavigate()
     <Router>
-      {/* ✅ AuthProvider est maintenant DANS le Router */}
       <AuthProvider>
         <Routes>
           {/* ===== ROUTES PUBLIQUES ===== */}
@@ -37,26 +41,16 @@ function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/success" element={<Success />} />
-          
-          {/* ===== ROUTES PROTÉGÉES ===== */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          
-          <Route
-            path="/calculator"
-            element={
-              <ProtectedRoute>
-                <Calculator />
-              </ProtectedRoute>
-            }
-          />
-          
+          <Route path="/PnLCalculator" element={<PnLCalculator />} />
+          <Route path="/stripe-success" element={<StripeSuccess />} />
+          <Route path="/chart" element={<ChartPage />} />
+          {/* Calculator accessible sans compte (gestion guest intégrée) */}
+          <Route path="/Calculator" element={<Calculator />} />
+          <Route path="/calculator" element={<Calculator />} />
+
+          {/* ===== ROUTES PUBLIQUES ÉTENDUES ===== */}
+          <Route path="/dashboard" element={<Dashboard />} />
+
           <Route
             path="/advanced-calculator"
             element={
@@ -65,7 +59,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="/ai-advisor"
             element={
@@ -74,7 +68,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="/pnl-calculator"
             element={
@@ -83,7 +77,16 @@ function App() {
               </ProtectedRoute>
             }
           />
-          
+
+          <Route
+            path="/chart-analysis"
+            element={
+              <ProtectedRoute>
+                <ChartAnalysis />
+              </ProtectedRoute>
+            }
+          />
+
           {/* ===== REDIRECTIONS ===== */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

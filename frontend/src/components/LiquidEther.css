@@ -1,0 +1,13 @@
+/* src/components/LiquidEther.css */
+.liquid-ether-container {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: hidden;
+}
+
+.liquid-ether-container canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}

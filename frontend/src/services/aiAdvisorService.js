@@ -1,5 +1,4 @@
 import { supabase } from '../lib/supabase';
-import { getPriceData, getMarketVolatility, getVolumeData } from './priceApi';
 
 class AIAdvisorService {
   constructor() {

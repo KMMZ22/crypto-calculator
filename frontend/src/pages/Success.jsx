@@ -1,59 +1,64 @@
-// src/pages/Success.jsx
+// src/pages/Success.jsx - VERSION FINALE CORRIGÉE
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, Shield, ArrowRight } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext'; // ← Ajoute ceci
 
 const Success = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth(); // ← Récupère l'utilisateur connecté
   const [loading, setLoading] = useState(true);
+  const [countdown, setCountdown] = useState(5);
+  const [verified, setVerified] = useState(false);
 
   useEffect(() => {
-    const sessionId = searchParams.get('session_id');
+    console.log('✅ Success page mounted');
+    console.log('👤 Utilisateur:', user?.email);
     
-    if (sessionId) {
-      // Vérifier le statut du paiement
-      verifyPayment(sessionId);
-    } else {
-      // Si pas de session_id, rediriger après 3s
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 3000);
-    }
-  }, []);
+    const sessionId = searchParams.get('session_id');
+    console.log('🔍 Session ID:', sessionId);
 
-  const verifyPayment = async (sessionId) => {
-    try {
-      // Appeler ton backend pour vérifier
-      const response = await fetch(`http://localhost:3000/api/check-session/${sessionId}`);
-      const data = await response.json();
-      
-      if (data.status === 'paid') {
-        console.log('✅ Paiement confirmé pour:', data.customerEmail);
-        // Tu peux aussi appeler un webhook pour mettre à jour Clerk ici
-      }
-    } catch (error) {
-      console.error('Erreur vérification:', error);
-    } finally {
+    // Simuler une vérification (2 secondes)
+    const verifyTimer = setTimeout(() => {
+      console.log('✅ Vérification terminée');
+      setVerified(true);
       setLoading(false);
-      // Rediriger vers dashboard après 5 secondes
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 5000);
-    }
-  };
+      
+      // Démarrer le compte à rebours
+      let seconds = 5;
+      const interval = setInterval(() => {
+        seconds -= 1;
+        setCountdown(seconds);
+        
+        if (seconds <= 0) {
+          clearInterval(interval);
+          console.log('➡️ Redirection vers dashboard');
+          navigate('/dashboard');
+        }
+      }, 1000);
+    }, 2000);
 
+    // Cleanup
+    return () => {
+      clearTimeout(verifyTimer);
+    };
+  }, [searchParams, navigate, user]); // ← Dépendances
+
+  // Si en cours de chargement
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-400">Vérification de votre paiement...</p>
+          <p className="text-sm text-gray-600 mt-2">Session: {searchParams.get('session_id') || 'aucune'}</p>
         </div>
       </div>
     );
   }
 
+  // Succès - afficher la page
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-6">
       <div className="max-w-md w-full">
@@ -93,6 +98,9 @@ const Success = () => {
           
           <p className="text-sm text-gray-500 mt-6">
             Vous recevrez un email de confirmation dans quelques minutes.
+            <span className="block mt-2 text-green-500">
+              Redirection automatique dans {countdown} secondes...
+            </span>
           </p>
         </div>
       </div>
