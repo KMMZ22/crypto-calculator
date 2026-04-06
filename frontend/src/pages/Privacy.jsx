@@ -17,7 +17,7 @@ export default function Privacy() {
                 TradeGuard
               </span>
             </Link>
-            <Link 
+            <Link
               to="/"
               className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
             >
@@ -139,7 +139,7 @@ export default function Privacy() {
           <section>
             <h2 className="text-2xl font-bold mb-4">6. Cookies</h2>
             <p className="text-slate-300">
-              Nous utilisons uniquement des cookies essentiels pour le fonctionnement du service. 
+              Nous utilisons uniquement des cookies essentiels pour le fonctionnement du service.
               Aucun cookie de suivi publicitaire n'est utilisé.
             </p>
           </section>
@@ -147,8 +147,8 @@ export default function Privacy() {
           <section>
             <h2 className="text-2xl font-bold mb-4">7. Contact</h2>
             <p className="text-slate-300">
-              Délégué à la protection des données :<br/>
-              Email : dpo@tradeguard.app<br/>
+              Délégué à la protection des données :<br />
+              Email : dpo@tradeguard.app<br />
               Adresse : TradeGuard SAS, 123 Avenue du Trading, 75008 Paris, France
             </p>
           </section>

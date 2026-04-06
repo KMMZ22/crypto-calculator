@@ -36,16 +36,16 @@ const Header = ({ activeTab, setActiveTab }) => {
         <div className="flex justify-between items-center h-16">
           {/* Logo + Navigation */}
           <div className="flex items-center gap-6">
-            <button 
-              onClick={() => navigate('/')}
-              className="flex items-center gap-2 hover:opacity-80 transition"
-            >
-              <Shield className="text-[#6366F1]" size={32} />
+            {/* Logo */}
+            <div className="flex-shrink-0 flex items-center gap-2 cursor-pointer" onClick={() => navigate('/dashboard')}>
+              <div className="p-1.5 bg-[#6366F1]/10 rounded-lg border border-[#6366F1]/20">
+                <Shield className="text-[#6366F1]" size={24} />
+              </div>
               <span className="text-xl font-bold text-white">TradeGuard</span>
-            </button>
-            
+            </div>
+
             {/* Dashboard button - CORRIGÉ */}
-            <button 
+            <button
               onClick={() => {
                 if (setActiveTab) {
                   setActiveTab('resume');
@@ -56,19 +56,19 @@ const Header = ({ activeTab, setActiveTab }) => {
             >
               Dashboard
             </button>
-            
+
             {/* Menu Calculateurs */}
             <CalculatorsMenu />
-            
+
             {/* Calendrier */}
-            <button 
+            <button
               onClick={() => navigate('/dashboard?tab=calendar')}
               className="px-3 py-2 rounded-lg transition text-gray-400 hover:text-white"
             >
               Calendrier
             </button>
           </div>
-      
+
           {/* Petit bonhomme - Menu profil */}
           <div className="relative">
             <button
@@ -89,7 +89,7 @@ const Header = ({ activeTab, setActiveTab }) => {
 
             {isProfileMenuOpen && (
               <>
-                <div 
+                <div
                   className="fixed inset-0 z-40"
                   onClick={() => setIsProfileMenuOpen(false)}
                 />
@@ -98,11 +98,10 @@ const Header = ({ activeTab, setActiveTab }) => {
                     <p className="font-medium text-white">{profile?.username || 'Utilisateur'}</p>
                     <p className="text-sm text-gray-400 mt-1">{user?.email}</p>
                     <div className="flex items-center gap-2 mt-3">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        isElite ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 
-                        isPro ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 
-                        'bg-[#1E1F23] text-gray-400 border border-gray-700'
-                      }`}>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${isElite ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                        isPro ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                          'bg-[#1E1F23] text-gray-400 border border-gray-700'
+                        }`}>
                         {profile?.subscription_plan?.toUpperCase() || 'FREE'}
                       </span>
                     </div>

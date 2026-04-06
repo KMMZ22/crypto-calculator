@@ -17,7 +17,7 @@ export default function Terms() {
                 TradeGuard
               </span>
             </Link>
-            <Link 
+            <Link
               to="/"
               className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
             >
@@ -43,7 +43,7 @@ export default function Terms() {
             <div>
               <h2 className="text-xl font-bold text-red-400 mb-3">AVERTISSEMENT IMPORTANT</h2>
               <p className="text-slate-300">
-                Le trading comporte des risques de perte totale de capital. TradeGuard est un outil de calcul, 
+                Le trading comporte des risques de perte totale de capital. TradeGuard est un outil de calcul,
                 pas un conseiller financier. Vous êtes seul responsable de vos décisions de trading.
               </p>
             </div>
@@ -54,7 +54,7 @@ export default function Terms() {
           <section>
             <h2 className="text-2xl font-bold mb-4">1. Acceptation des conditions</h2>
             <p className="text-slate-300 mb-3">
-              En utilisant TradeGuard, vous acceptez ces conditions dans leur intégralité. Vous devez avoir au moins 18 ans 
+              En utilisant TradeGuard, vous acceptez ces conditions dans leur intégralité. Vous devez avoir au moins 18 ans
               et être légalement autorisé à trader dans votre juridiction.
             </p>
             <ul className="list-disc pl-5 text-slate-300 space-y-2">
@@ -69,7 +69,7 @@ export default function Terms() {
             <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 mb-3">
               <h3 className="font-bold text-red-400 mb-2">⚠️ Aucun remboursement</h3>
               <p className="text-slate-300">
-                Les abonnements payants ne sont pas remboursables. Les annulations prennent effet à la fin de la période 
+                Les abonnements payants ne sont pas remboursables. Les annulations prennent effet à la fin de la période
                 de facturation en cours. Aucun remboursement n'est accordé pour les périodes partielles.
               </p>
             </div>
@@ -100,7 +100,7 @@ export default function Terms() {
           <section>
             <h2 className="text-2xl font-bold mb-4">4. Variations de marché</h2>
             <p className="text-slate-300">
-              Les calculs fournis par TradeGuard sont basés sur les données que vous fournissez. Les conditions du marché 
+              Les calculs fournis par TradeGuard sont basés sur les données que vous fournissez. Les conditions du marché
               peuvent changer rapidement et les résultats réels peuvent différer significativement des calculs.
             </p>
           </section>
@@ -124,8 +124,8 @@ export default function Terms() {
           <section>
             <h2 className="text-2xl font-bold mb-4">6. Modifications des conditions</h2>
             <p className="text-slate-300">
-              Nous nous réservons le droit de modifier ces conditions d'utilisation. Les utilisateurs seront notifiés 
-              par email des changements importants. La poursuite de l'utilisation du service après modifications 
+              Nous nous réservons le droit de modifier ces conditions d'utilisation. Les utilisateurs seront notifiés
+              par email des changements importants. La poursuite de l'utilisation du service après modifications
               constitue l'acceptation des nouvelles conditions.
             </p>
           </section>
@@ -133,8 +133,8 @@ export default function Terms() {
           <section>
             <h2 className="text-2xl font-bold mb-4">7. Contact</h2>
             <p className="text-slate-300">
-              Pour toute question concernant ces conditions :<br/>
-              Email : legal@tradeguard.app<br/>
+              Pour toute question concernant ces conditions :<br />
+              Email : legal@tradeguard.app<br />
               Adresse : TradeGuard SAS, 123 Avenue du Trading, 75008 Paris, France
             </p>
           </section>
@@ -145,7 +145,7 @@ export default function Terms() {
             <p className="text-slate-400">
               Version 1.0 • {new Date().getFullYear()} TradeGuard
             </p>
-            <Link 
+            <Link
               to="/"
               className="px-6 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg hover:opacity-90 transition"
             >

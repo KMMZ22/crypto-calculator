@@ -12,6 +12,8 @@ export default function ChartAnalysis() {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
     const [error, setError] = useState('');
+    const [upgradeLoading, setUpgradeLoading] = useState(false);
+    const [upgradeError, setUpgradeError] = useState('');
     const [remaining, setRemaining] = useState(null);
     const [isDragging, setIsDragging] = useState(false);
 
@@ -27,8 +29,8 @@ export default function ChartAnalysis() {
                     .eq('tool', 'chart_analysis')
                     .maybeSingle();
                 const used = data?.count || 0;
-                const limits = { FREE: 2, PRO: 50, ELITE: 200, ADMIN: 9999 };
-                const plan = profile?.subscription_plan || 'FREE';
+                const limits = { free: 2, pro: 50, elite: 200, ADMIN: 9999 };
+                const plan = profile?.subscription_plan?.toLowerCase() || 'free';
                 setRemaining(Math.max(0, (limits[plan] || 0) - used));
             } catch (err) {
                 console.error('Error fetching remaining credits:', err);
@@ -74,18 +76,45 @@ export default function ChartAnalysis() {
         }
     };
 
+    const compressImage = (file, maxWidth = 800) => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob((blob) => {
+                        resolve(new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", { type: 'image/jpeg', lastModified: Date.now() }));
+                    }, 'image/jpeg', 0.8);
+                };
+            };
+        });
+    };
+
     const handleSubmit = async () => {
         if (!image) return;
         setLoading(true);
         setError('');
-        const formData = new FormData();
-        formData.append('chart', image);
-
         try {
+            const compressedImage = await compressImage(image);
+            const formData = new FormData();
+            formData.append('chart', compressedImage);
             // Race condition pour éviter le chargement infini si Supabase/réseau bloque
             const sessionPromise = supabase.auth.getSession();
             const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Le serveur met trop de temps à répondre (Timeout). Réessayez.')), 10000)
+                setTimeout(() => reject(new Error('Le serveur met trop de temps à répondre (Timeout). Réessayez.')), 30000)
             );
 
             const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
@@ -108,6 +137,34 @@ export default function ChartAnalysis() {
             setError(err.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleUpgrade = async () => {
+        setUpgradeLoading(true);
+        setUpgradeError('');
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+
+            const res = await fetch('http://localhost:3002/api/payment/upgrade-plan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ plan: 'ELITE', billingInterval: 'monthly' })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || data.message || 'Erreur inconnue lors de la mise à niveau');
+
+            // Recharger la page ou rediriger pour refléter le nouveau plan
+            window.location.reload();
+        } catch (err) {
+            setUpgradeError(err.message);
+        } finally {
+            setUpgradeLoading(false);
         }
     };
 
@@ -143,13 +200,26 @@ export default function ChartAnalysis() {
                                 <p className="text-2xl font-bold text-white">{(profile?.subscription_plan === 'ELITE' || profile?.subscription_plan === 'ADMIN') ? 'Illimité' : remaining}</p>
                             </div>
                         </div>
-                        {remaining === 0 && profile?.subscription_plan !== 'ELITE' && profile?.subscription_plan !== 'ADMIN' && (
+                        {profile?.subscription_plan?.toLowerCase() === 'free' && remaining === 0 && (
                             <button
                                 onClick={() => navigate('/select-plan')}
                                 className="px-4 py-2 bg-[#6366F1] text-white rounded-lg font-medium hover:bg-[#4F52E0] transition"
                             >
                                 Passer à un plan supérieur
                             </button>
+                        )}
+                        {profile?.subscription_plan === 'PRO' && (
+                            <div className="flex flex-col items-end gap-2">
+                                <button
+                                    onClick={handleUpgrade}
+                                    disabled={upgradeLoading}
+                                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-[#6366F1] text-white rounded-lg font-medium hover:from-purple-500 hover:to-[#4F52E0] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                >
+                                    {upgradeLoading ? <Loader size={16} className="animate-spin" /> : null}
+                                    Passer à ELITE
+                                </button>
+                                {upgradeError && <p className="text-red-400 text-xs text-right max-w-xs">{upgradeError}</p>}
+                            </div>
                         )}
                     </div>
                 )}

@@ -3,14 +3,14 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Shield, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import authService from '../services/authService'; // ← CORRECT (sans accolades)
+import { supabase } from '../lib/supabase';
 
 export default function StripeSuccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, loading: authLoading, refreshProfile } = useAuth();  const [status, setStatus] = useState('loading');
+  const { user, loading: authLoading, refreshProfile } = useAuth(); const [status, setStatus] = useState('loading');
   const [message, setMessage] = useState('');
-  
+
   const sessionId = searchParams.get('session_id');
   const plan = searchParams.get('plan');
 
@@ -26,7 +26,7 @@ export default function StripeSuccess() {
         // Vérifier l'utilisateur APRÈS chargement
         if (!user) {
           console.log('❌ Utilisateur non connecté après chargement');
-          
+
           // Sauvegarder l'intention de mise à niveau
           if (plan) {
             localStorage.setItem('pending_upgrade', JSON.stringify({
@@ -35,7 +35,7 @@ export default function StripeSuccess() {
               timestamp: Date.now()
             }));
           }
-          
+
           setStatus('error');
           setMessage('Veuillez vous connecter pour activer votre abonnement');
           return;
@@ -45,19 +45,39 @@ export default function StripeSuccess() {
         console.log('🎯 Mise à jour du plan:', plan);
 
         // Vérifier que le plan est valide
-        if (!plan || !['pro', 'elite'].includes(plan)) {
+        const normalizedPlan = plan?.toLowerCase();
+        if (!normalizedPlan || !['pro', 'elite'].includes(normalizedPlan)) {
           setStatus('error');
           setMessage('Plan invalide');
           return;
         }
 
-        // Mettre à jour le plan via authService
-        let result;
-        if (plan === 'elite') {
-          result = await authService.upgradeToElite(user.id);
-        } else {
-          result = await authService.upgradeToPro(user.id);
-        }
+        // Mettre à jour le plan directement via Supabase pour éviter les hangs
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout de la base de données. Veuillez rafraîchir.")), 15000)
+        );
+
+        const updateProcess = async () => {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({ subscription_plan: normalizedPlan })
+            .eq('id', user.id);
+
+          if (profileError) throw profileError;
+
+          // Ajouter les crédits en fonction du plan
+          await supabase
+            .from('ai_credits')
+            .upsert({
+              user_id: user.id,
+              credits_remaining: normalizedPlan === 'elite' ? 50 : 20,
+              monthly_limit: normalizedPlan === 'elite' ? 50 : 20
+            }, { onConflict: 'user_id' });
+
+          return { success: true };
+        };
+
+        const result = await Promise.race([updateProcess(), timeoutPromise]);
 
         if (!result.success) {
           throw new Error(result.error);
@@ -65,7 +85,7 @@ export default function StripeSuccess() {
 
         // Rafraîchir le profil
         await refreshProfile();
-        
+
         // Nettoyer tout pending upgrade
         localStorage.removeItem('pending_upgrade');
 
@@ -74,7 +94,7 @@ export default function StripeSuccess() {
 
         // Redirection après 3 secondes
         setTimeout(() => navigate('/dashboard'), 3000);
-        
+
       } catch (error) {
         console.error('❌ Erreur détaillée:', error);
         setStatus('error');
@@ -98,41 +118,6 @@ export default function StripeSuccess() {
     );
   }
 
-
-  useEffect(() => {
-    const handleSuccess = async () => {
-      try {
-        if (!user) {
-          setStatus('error');
-          setMessage('Utilisateur non connecté');
-          return;
-        }
-
-        console.log('🎯 Mise à jour du plan:', plan);
-
-        if (plan === 'elite') {
-          const result = await authService.upgradeToElite(user.id);
-          console.log('Résultat upgrade ELITE:', result);
-        } else if (plan === 'pro') {
-          const result = await authService.upgradeToPro(user.id);
-          console.log('Résultat upgrade PRO:', result);
-        }
-
-        await refreshProfile();
-
-        setStatus('success');
-        setMessage(`Félicitations ! Vous êtes maintenant membre ${plan?.toUpperCase()}`);
-
-        setTimeout(() => navigate('/dashboard'), 3000);
-      } catch (error) {
-        console.error('❌ Erreur:', error);
-        setStatus('error');
-        setMessage('Erreur lors de la mise à jour du compte');
-      }
-    };
-
-    handleSuccess();
-  }, [plan, user, navigate, refreshProfile]);
 
   return (
     <div className="min-h-screen bg-[#0A0B0D] text-white flex items-center justify-center p-4">
@@ -201,7 +186,7 @@ export default function StripeSuccess() {
               </h2>
               <p className="text-red-400 mb-6">{message}</p>
               <button
-                onClick={() => navigate('/SelectPlan')}
+                onClick={() => navigate('/select-plan')}
                 className="px-6 py-3 bg-[#6366F1] text-white rounded-lg hover:bg-[#4F52E0] transition flex items-center justify-center gap-2 mx-auto"
               >
                 <span>Retour aux plans</span>
@@ -211,6 +196,6 @@ export default function StripeSuccess() {
           )}
         </div>
       </div>
-    </div>
+    </div >
   );
 }

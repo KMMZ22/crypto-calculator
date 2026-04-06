@@ -30,12 +30,12 @@ export default function AdvancedCalculator() {
     const loadUser = async () => {
       try {
         const { data: { user }, error } = await supabase.auth.getUser();
-        
+
         if (error || !user) {
           navigate('/auth');
           return;
         }
-        
+
         setUser(user);
         setUserName(user.user_metadata?.username || user.email?.split('@')[0] || 'Trader');
         const plan = user.user_metadata?.plan || 'free';
@@ -50,7 +50,7 @@ export default function AdvancedCalculator() {
         navigate('/auth');
       }
     };
-    
+
     loadUser();
   }, [navigate]);
 
@@ -95,10 +95,10 @@ export default function AdvancedCalculator() {
 
     // Calculate stop loss percentage
     const slPercent = Math.abs(((entry - sl) / entry) * 100);
-    
+
     // Calculate position size
     const positionSize = riskAmount / (slPercent / 100);
-    
+
     // Calculate quantity
     const quantity = positionSize / entry;
 
@@ -138,7 +138,7 @@ export default function AdvancedCalculator() {
 
     // Calculate quantity
     const quantity = size / entry;
-    
+
     // Calculate price change
     let priceChange;
     if (orderType === 'long') {
@@ -149,18 +149,18 @@ export default function AdvancedCalculator() {
 
     // Calculate gross P&L
     const grossPnL = (size * (priceChange / 100)) * lev;
-    
+
     // Calculate fees
     const entryFee = size * fee;
     const exitFee = (size + grossPnL) * fee;
     const totalFees = entryFee + exitFee;
-    
+
     // Net P&L
     const netPnL = grossPnL - totalFees;
-    
+
     // ROI
     const roi = (netPnL / size) * 100;
-    
+
     // Liquidation price
     let liquidationPrice;
     if (orderType === 'long') {
@@ -209,20 +209,20 @@ export default function AdvancedCalculator() {
                 </div>
                 <h1 className="text-2xl font-bold text-white">TradeGuard</h1>
               </div>
-              
+
               <div className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full text-white text-sm font-bold flex items-center gap-2">
                 <Crown size={16} />
                 {userPlan === 'elite' ? 'ELITE' : 'PRO'} ADVANCED
               </div>
-              
-              <button 
+
+              <button
                 onClick={() => navigate('/dashboard')}
                 className="px-4 py-2 text-gray-400 hover:text-white transition"
               >
                 ← Dashboard
               </button>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <button
                 onClick={quickFillExample}
@@ -403,7 +403,7 @@ export default function AdvancedCalculator() {
                     <Lock className="text-gray-600" size={28} />
                   </div>
                   <p className="text-gray-400 text-sm">
-                    Complétez d'abord le Position Sizing<br/>pour déverrouiller le P&L
+                    Complétez d'abord le Position Sizing<br />pour déverrouiller le P&L
                   </p>
                 </div>
               ) : (
@@ -416,21 +416,19 @@ export default function AdvancedCalculator() {
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => setOrderType('long')}
-                        className={`py-2 rounded-lg font-semibold transition ${
-                          orderType === 'long'
-                            ? 'bg-green-500 text-white'
-                            : 'bg-gray-800 text-gray-400'
-                        }`}
+                        className={`py-2 rounded-lg font-semibold transition ${orderType === 'long'
+                          ? 'bg-green-500 text-white'
+                          : 'bg-gray-800 text-gray-400'
+                          }`}
                       >
                         LONG
                       </button>
                       <button
                         onClick={() => setOrderType('short')}
-                        className={`py-2 rounded-lg font-semibold transition ${
-                          orderType === 'short'
-                            ? 'bg-red-500 text-white'
-                            : 'bg-gray-800 text-gray-400'
-                        }`}
+                        className={`py-2 rounded-lg font-semibold transition ${orderType === 'short'
+                          ? 'bg-red-500 text-white'
+                          : 'bg-gray-800 text-gray-400'
+                          }`}
                       >
                         SHORT
                       </button>
@@ -490,11 +488,10 @@ export default function AdvancedCalculator() {
                         <button
                           key={feeValue}
                           onClick={() => setFees(feeValue)}
-                          className={`py-2 rounded-lg text-xs font-medium transition ${
-                            fees === feeValue
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-gray-800 text-gray-400'
-                          }`}
+                          className={`py-2 rounded-lg text-xs font-medium transition ${fees === feeValue
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-800 text-gray-400'
+                            }`}
                         >
                           {feeValue}%
                         </button>
@@ -504,21 +501,18 @@ export default function AdvancedCalculator() {
 
                   {/* P&L Results */}
                   {pnlResults && (
-                    <div className={`mt-6 p-6 bg-gradient-to-br ${
-                      parseFloat(pnlResults.netPnL) >= 0 
-                        ? 'from-green-500/20 to-transparent border-green-500/30' 
-                        : 'from-red-500/20 to-transparent border-red-500/30'
-                    } border rounded-lg`}>
+                    <div className={`mt-6 p-6 bg-gradient-to-br ${parseFloat(pnlResults.netPnL) >= 0
+                      ? 'from-green-500/20 to-transparent border-green-500/30'
+                      : 'from-red-500/20 to-transparent border-red-500/30'
+                      } border rounded-lg`}>
                       <div className="text-center mb-4">
                         <p className="text-gray-400 text-xs mb-1">Profit/Loss Net</p>
-                        <p className={`text-4xl font-bold ${
-                          parseFloat(pnlResults.netPnL) >= 0 ? 'text-green-500' : 'text-red-500'
-                        }`}>
+                        <p className={`text-4xl font-bold ${parseFloat(pnlResults.netPnL) >= 0 ? 'text-green-500' : 'text-red-500'
+                          }`}>
                           ${parseFloat(pnlResults.netPnL) >= 0 ? '+' : ''}{pnlResults.netPnL}
                         </p>
-                        <p className={`text-lg font-semibold ${
-                          parseFloat(pnlResults.roi) >= 0 ? 'text-green-400' : 'text-red-400'
-                        }`}>
+                        <p className={`text-lg font-semibold ${parseFloat(pnlResults.roi) >= 0 ? 'text-green-400' : 'text-red-400'
+                          }`}>
                           {parseFloat(pnlResults.roi) >= 0 ? '+' : ''}{pnlResults.roi}% ROI
                         </p>
                       </div>
@@ -536,9 +530,8 @@ export default function AdvancedCalculator() {
                         </div>
                         <div className="flex justify-between pt-2 border-t border-gray-700">
                           <span className="text-white font-semibold">Net</span>
-                          <span className={`font-bold ${
-                            parseFloat(pnlResults.netPnL) >= 0 ? 'text-green-500' : 'text-red-500'
-                          }`}>
+                          <span className={`font-bold ${parseFloat(pnlResults.netPnL) >= 0 ? 'text-green-500' : 'text-red-500'
+                            }`}>
                             ${pnlResults.netPnL}
                           </span>
                         </div>

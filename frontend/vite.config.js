@@ -4,29 +4,30 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  
+
   server: {
     port: 3001,
     host: true,
     strictPort: true, // Évite le changement automatique de port
-    
+
     // Configuration HMR optimisée
     hmr: {
       host: 'localhost',
       port: 3001,
       protocol: 'ws'
     },
-    
+
     // Proxy pour le backend (3002)
     proxy: {
       '/api': {
         target: 'http://localhost:3002',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        timeout: 30000
       }
     }
   },
-  
+
   // Configuration BUILD production
   build: {
     outDir: 'dist',
@@ -51,19 +52,19 @@ export default defineConfig({
     },
     chunkSizeWarningLimit: 1000 // Augmente la limite d'avertissement
   },
-  
+
   // Configuration PREVIEW (simulation prod)
   preview: {
     port: 3001,
     host: true
   },
-  
+
   // Optimisations
   css: {
     devSourcemap: false, // Pas de sourcemap CSS en prod
     postcss: './postcss.config.js'
   },
-  
+
   // Variables d'environnement
   envPrefix: 'VITE_'
 });

@@ -13,14 +13,14 @@ const authService = {
                 options: {
                     data: {
                         username: username || email.split('@')[0],
-                        subscription_plan: 'FREE'
+                        subscription_plan: 'free'
                         // ❌ RETIRÉ credits: 10 (car géré par ai_credits)
                     }
                 }
             });
 
             if (error) throw error;
-            
+
             // ✅ Créer automatiquement l'entrée dans ai_credits
             if (data.user) {
                 await supabase
@@ -31,7 +31,7 @@ const authService = {
                         monthly_limit: 10
                     });
             }
-            
+
             return { success: true, user: data.user };
         } catch (error) {
             console.error('❌ Erreur signup:', error);
@@ -78,7 +78,7 @@ const authService = {
         try {
             // ✅ Vérifier d'abord la session
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-            
+
             if (sessionError || !session) {
                 return { success: false, error: 'Non connecté' };
             }
@@ -106,7 +106,7 @@ const authService = {
                     id: session.user.id,
                     email: session.user.email,
                     username: profile?.username || session.user.email?.split('@')[0],
-                    subscription_plan: profile?.subscription_plan || 'FREE',
+                    subscription_plan: profile?.subscription_plan || 'free',
                     capital: profile?.capital || 10000,
                     credits: credits?.credits_remaining || 0
                 }
@@ -143,7 +143,7 @@ const authService = {
             // Gérer les crédits (upsert)
             const { error: creditsError } = await supabase
                 .from('ai_credits')
-                .upsert({ 
+                .upsert({
                     user_id: userId,
                     credits_remaining: 50,
                     monthly_limit: 50
@@ -175,11 +175,11 @@ const authService = {
                 .eq('id', userId);
 
             if (error) throw error;
-            
+
             // ✅ Créer les crédits si nécessaire (pour les anciens users)
             await supabase
                 .from('ai_credits')
-                .upsert({ 
+                .upsert({
                     user_id: userId,
                     credits_remaining: 20,
                     monthly_limit: 20
@@ -215,13 +215,13 @@ const authService = {
             // Mettre à jour
             const { error: updateError } = await supabase
                 .from('ai_credits')
-                .upsert({ 
+                .upsert({
                     user_id: userId,
                     credits_remaining: newCredits
                 }, { onConflict: 'user_id' });
 
             if (updateError) throw updateError;
-            
+
             return { success: true, newCredits };
         } catch (error) {
             console.error('❌ Erreur updateCredits:', error);
@@ -238,7 +238,7 @@ const authService = {
                 .maybeSingle();  // ✅ maybeSingle
 
             if (error && error.code !== 'PGRST116') throw error;
-            
+
             return { success: true, credits: data?.credits_remaining || 0 };
         } catch (error) {
             console.error('❌ Erreur getCredits:', error);

@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }) => {
         console.warn('⚠️ AuthContext timeout - force loading false');
         setLoading(false);
       }
-    }, 5000);
+    }, 30000);
     checkUser();
     return () => clearTimeout(timeout);
   }, []);

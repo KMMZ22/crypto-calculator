@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 const GUEST_LIMIT = 10;
-const FREE_LIMIT = 10;
+const free_LIMIT = 10;
 
 function getStorageKey(feature) {
     return `tg_usage_${feature}`;
@@ -83,7 +83,7 @@ export function useUsage(feature) {
             const next = { count: data.count + 1, date: new Date().toDateString() };
             saveUsageData(key, next);
 
-            const limit = isGuest ? GUEST_LIMIT : FREE_LIMIT;
+            const limit = isGuest ? GUEST_LIMIT : free_LIMIT;
             setRemaining(prev => Math.max(0, prev - 1));
         } catch (err) {
             console.error('incrementUsage error:', err);

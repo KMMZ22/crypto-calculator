@@ -19,7 +19,7 @@ export default function Dashboard() {
   console.log('🚀 Dashboard monté'); // LOG 1
 
   const navigate = useNavigate();
-  const { user, loading: authLoading, logout } = useAuth();
+  const { user, profile: authProfile, loading: authLoading, logout } = useAuth();
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState(null);
   const [trades, setTrades] = useState([]);
@@ -108,48 +108,43 @@ export default function Dashboard() {
     try {
       setLoading(true);
 
-      // Profil : sélectionner uniquement les champs nécessaires
-      console.log('📥 Chargement du profil...');
-      console.time('⏱️ Profil');
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, username, subscription_plan, capital, email')
-        .eq('id', userId)
-        .maybeSingle();
-      console.timeEnd('⏱️ Profil');
+      // Wrapper global avec timeout de 15 secondes pour éviter le chargement infini (même problème que Signup)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout du serveur. Les données n'ont pas pu être chargées.")), 15000)
+      );
 
-      if (profileError) {
-        console.error('❌ Erreur profil détaillée:', profileError);
-      } else {
+      const fetchDataProcess = async () => {
+        // 1. Profil : utiliser celui de l'AuthContext (déjà chargé) ou fallback
+        console.log('📥 Chargement du profil via AuthContext...');
+        const profileData = authProfile || { subscription_plan: 'free' };
+        setProfile(profileData);
         console.log('✅ Profil reçu:', profileData);
-      }
-      setProfile(profileData || { subscription_plan: 'free' });
 
-      // Trades : utiliser la fonction loadTradesWithLimit
-      console.log('📥 Chargement des trades...');
-      console.time('⏱️ Trades');
-      // On passe profileData directement pour éviter le problème de stale closure avec le state React
-      const tradesData = await loadTradesWithLimit(userId, profileData || { subscription_plan: 'free' });
-      console.timeEnd('⏱️ Trades');
-      console.log(`✅ ${tradesData?.length || 0} trades chargés`);
-      setTrades(tradesData || []);
-      setAllTradesCount(tradesData?.length || 0);
+        // 2. Trades : utiliser la fonction loadTradesWithLimit
+        console.log('📥 Chargement des trades...');
+        console.time('⏱️ Trades');
+        const tradesData = await loadTradesWithLimit(userId, profileData);
+        console.timeEnd('⏱️ Trades');
+        console.log(`✅ ${tradesData?.length || 0} trades chargés`);
+        setTrades(tradesData || []);
+        setAllTradesCount(tradesData?.length || 0);
 
-      // Crédits : sélectionner seulement credits_remaining
-      console.log('📥 Chargement des crédits IA...');
-      console.time('⏱️ Crédits');
-      const { data: credits, error: creditsError } = await supabase
-        .from('ai_credits')
-        .select('credits_remaining')
-        .eq('user_id', userId)
-        .maybeSingle();
-      console.timeEnd('⏱️ Crédits');
+        // 3. Crédits
+        console.log('📥 Chargement des crédits IA...');
+        console.time('⏱️ Crédits');
+        const { data: credits, error: creditsError } = await supabase
+          .from('ai_credits')
+          .select('credits_remaining')
+          .eq('user_id', userId)
+          .maybeSingle();
+        console.timeEnd('⏱️ Crédits');
 
-      if (creditsError) {
-        console.error('❌ Erreur crédits détaillée:', creditsError);
-      } else {
-        console.log('✅ Crédits reçus:', credits);
-      }
+        if (creditsError) console.error('❌ Erreur crédits détaillée:', creditsError);
+
+        return { tradesData, credits };
+      };
+
+      const { tradesData, credits } = await Promise.race([fetchDataProcess(), timeoutPromise]);
 
       // Calcul des statistiques à partir des tradesData
       console.log('📊 Calcul des statistiques...');
@@ -366,7 +361,6 @@ export default function Dashboard() {
                 <Shield className="text-[#6366F1]" size={32} />
                 <span className="text-xl font-bold text-white">TradeGuard</span>
               </button>
-
               <button
                 onClick={() => setActiveTab('resume')}
                 className={`px-3 py-2 rounded-lg transition ${activeTab === 'resume' ? 'bg-[#6366F1]/10 text-[#6366F1]' : 'text-gray-400 hover:text-white'
@@ -776,7 +770,7 @@ export default function Dashboard() {
                 <History className="text-gray-600 mx-auto mb-4" size={48} />
                 <h3 className="text-lg font-medium text-white mb-2">Historique limité</h3>
                 <p className="text-gray-400 text-sm mb-6">Votre plan gratuit affiche uniquement les 7 derniers jours.</p>
-                <button onClick={() => navigate('/SelectPlan')} className="px-6 py-2 bg-[#6366F1] text-white rounded-lg hover:bg-[#4F52E0] transition">Passer en PRO</button>
+                <button onClick={() => navigate('/select-plan')} className="px-6 py-2 bg-[#6366F1] text-white rounded-lg hover:bg-[#4F52E0] transition">Passer en PRO</button>
               </div>
             )}
           </div>

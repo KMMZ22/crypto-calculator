@@ -10,11 +10,11 @@ export default function LiquidEther({
   cursorSize = 100,
   isViscous = false,
   viscous = 30,
-  iterationsViscous = 32,
-  iterationsPoisson = 32,
-  dt = 0.014,
-  BFECC = true,
-  resolution = 0.5,
+  iterationsViscous = 16,
+  iterationsPoisson = 24,
+  dt = 0.016,
+  BFECC = false,
+  resolution = 0.4,
   isBounce = false,
   colors = ['#5227FF', '#FF9FFC', '#B19EEF'],
   style = {},
@@ -141,6 +141,12 @@ export default function LiquidEther({
         this._onTouchMove = this.onDocumentTouchMove.bind(this);
         this._onTouchEnd = this.onTouchEnd.bind(this);
         this._onDocumentLeave = this.onDocumentLeave.bind(this);
+
+        // Easing state
+        this.targetCoords = new THREE.Vector2();
+        this.velocity = new THREE.Vector2();
+        this.isMoving = false;
+        this.lastMoveTime = 0;
       }
       init(container) {
         this.container = container;
@@ -183,20 +189,27 @@ export default function LiquidEther({
       }
       setCoords(x, y) {
         if (!this.container) return;
-        if (this.timer) window.clearTimeout(this.timer);
         const rect = this.container.getBoundingClientRect();
         if (rect.width === 0 || rect.height === 0) return;
+
         const nx = (x - rect.left) / rect.width;
         const ny = (y - rect.top) / rect.height;
-        this.coords.set(nx * 2 - 1, -(ny * 2 - 1));
+        this.targetCoords.set(nx * 2 - 1, -(ny * 2 - 1));
+
         this.mouseMoved = true;
+        this.isMoving = true;
+        this.lastMoveTime = performance.now();
+
+        if (this.timer) window.clearTimeout(this.timer);
         this.timer = window.setTimeout(() => {
           this.mouseMoved = false;
         }, 100);
       }
       setNormalized(nx, ny) {
-        this.coords.set(nx, ny);
+        this.targetCoords.set(nx, ny);
         this.mouseMoved = true;
+        this.isMoving = true;
+        this.lastMoveTime = performance.now();
       }
       onDocumentMouseMove(event) {
         if (!this.updateHoverState(event.clientX, event.clientY)) return;
@@ -245,17 +258,43 @@ export default function LiquidEther({
           if (t >= 1) {
             this.takeoverActive = false;
             this.coords.copy(this.takeoverTo);
+            this.targetCoords.copy(this.takeoverTo);
             this.coords_old.copy(this.coords);
             this.diff.set(0, 0);
           } else {
             const k = t * t * (3 - 2 * t);
-            this.coords.copy(this.takeoverFrom).lerp(this.takeoverTo, k);
+            this.targetCoords.copy(this.takeoverFrom).lerp(this.takeoverTo, k);
           }
         }
-        this.diff.subVectors(this.coords, this.coords_old);
+
+        // --- Added: Smooth Cursor Movement (Interpolation/Lerp) ---
+        // Lerp factor controls cursor lag: higher = sharper, lower = smoother
+        const lerpFactor = 0.25;
+
         this.coords_old.copy(this.coords);
-        if (this.coords_old.x === 0 && this.coords_old.y === 0) this.diff.set(0, 0);
-        if (this.isAutoActive && !this.takeoverActive) this.diff.multiplyScalar(this.autoIntensity);
+        this.coords.lerp(this.targetCoords, lerpFactor);
+
+        this.diff.subVectors(this.coords, this.coords_old);
+
+        // Calculate time since last move 
+        const timeSinceMove = performance.now() - this.lastMoveTime;
+
+        if (!this.isAutoActive) {
+          if (timeSinceMove > 100) {
+            this.isMoving = false;
+          }
+
+          if (!this.isMoving) {
+            // Easing / Friction quand la souris s'arrête
+            this.velocity.copy(this.diff);
+            this.velocity.multiplyScalar(0.92); // Friction coeff (0.90 - 0.95 = smooth fade)
+            this.diff.copy(this.velocity);
+          } else {
+            this.velocity.copy(this.diff);
+          }
+        } else if (!this.takeoverActive) {
+          this.diff.multiplyScalar(this.autoIntensity);
+        }
       }
     }
     const Mouse = new MouseClass();
@@ -748,16 +787,16 @@ export default function LiquidEther({
     class Simulation {
       constructor(options) {
         this.options = {
-          iterations_poisson: 32,
-          iterations_viscous: 32,
+          iterations_poisson: 24,
+          iterations_viscous: 16,
           mouse_force: 20,
-          resolution: 0.5,
+          resolution: 0.4,
           cursor_size: 100,
           viscous: 30,
           isBounce: false,
-          dt: 0.014,
+          dt: 0.016,
           isViscous: false,
-          BFECC: true,
+          BFECC: false,
           ...options
         };
         this.fbos = {

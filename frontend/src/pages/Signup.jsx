@@ -22,25 +22,34 @@ export default function Signup() {
     try {
       console.log('📝 Tentative inscription...', { email, username });
 
-      // 🔴 ÉTAPE 1 : Déconnecter l'utilisateur actuel s'il existe
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        console.log('👤 Session existante détectée, déconnexion...');
-        await supabase.auth.signOut();
-        // Vider le localStorage des clés Supabase (optionnel mais robuste)
-        // Note: la clé exacte dépend de votre projet, on vide tout pour être sûr
-        localStorage.clear();
-        // Petit délai pour que la déconnexion soit prise en compte
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
+      // 🔴 ÉTAPE 1 : Déconnecter l'utilisateur actuel et s'inscrire AVEC un timeout global
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Le serveur met trop de temps à répondre (Timeout). Veuillez vérifier votre connexion ou vos bloqueurs de publicité.")), 15000)
+      );
 
-      // 🔴 ÉTAPE 2 : Inscription
-      const result = await signup(email, password, username);
-      
+      const signupProcess = async () => {
+        // A. Nettoyage de la session
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          console.log('👤 Session existante détectée, déconnexion...');
+          await supabase.auth.signOut();
+          localStorage.clear();
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+
+        // B. Inscription
+        return await signup(email, password, username);
+      };
+
+      const result = await Promise.race([
+        signupProcess(),
+        timeoutPromise
+      ]);
+
       if (result.success) {
         console.log('✅ Inscription réussie!');
         // ✅ REDIRECTION VERS SELECT PLAN
-        navigate('/SelectPlan', { replace: true });
+        navigate('/select-plan', { replace: true });
       } else {
         // Gestion spécifique des erreurs
         if (result.error?.includes('rate limit')) {
@@ -53,7 +62,12 @@ export default function Signup() {
       }
     } catch (err) {
       console.error('❌ Erreur:', err);
-      setError('Une erreur est survenue');
+      // Afficher l'erreur du timeout de manière claire
+      if (err.message && err.message.includes('Timeout')) {
+        setError(err.message);
+      } else {
+        setError('Une erreur est survenue lors de l\'inscription. Veuillez réessayer.');
+      }
     } finally {
       setLoading(false);
     }
@@ -69,7 +83,10 @@ export default function Signup() {
 
       <div className="relative w-full max-w-md">
         {/* Logo */}
-        <div className="flex justify-center mb-8">
+        <div
+          className="flex justify-center mb-8 cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={() => navigate('/')}
+        >
           <div className="relative">
             <div className="absolute -inset-1 bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] rounded-lg blur opacity-20"></div>
             <div className="relative bg-[#131517] p-3 rounded-lg">

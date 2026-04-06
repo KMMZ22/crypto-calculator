@@ -310,22 +310,22 @@ export default function Calculator() {
                 <button
                   onClick={() => setAssetType('crypto')}
                   className={`flex-1 py-3 rounded-lg font-medium transition ${assetType === 'crypto'
-                      ? 'bg-green-500/20 border border-green-500 text-green-400'
-                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                    ? 'bg-green-500/20 border border-green-500 text-green-400'
+                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                     }`}
                 >Crypto</button>
                 <button
                   onClick={() => setAssetType('stocks')}
                   className={`flex-1 py-3 rounded-lg font-medium transition ${assetType === 'stocks'
-                      ? 'bg-blue-500/20 border border-blue-500 text-blue-400'
-                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                    ? 'bg-blue-500/20 border border-blue-500 text-blue-400'
+                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                     }`}
                 >Actions</button>
                 <button
                   onClick={() => setAssetType('forex')}
                   className={`flex-1 py-3 rounded-lg font-medium transition ${assetType === 'forex'
-                      ? 'bg-purple-500/20 border border-purple-500 text-purple-400'
-                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                    ? 'bg-purple-500/20 border border-purple-500 text-purple-400'
+                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                     }`}
                 >Forex</button>
               </div>
@@ -351,8 +351,8 @@ export default function Calculator() {
                   <button
                     key={pair.value} onClick={() => setSelectedSymbol(pair.value)}
                     className={`p-2 rounded-lg border transition text-sm ${selectedSymbol === pair.value
-                        ? 'bg-green-500/20 border-green-500 text-white'
-                        : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:bg-gray-700'
+                      ? 'bg-green-500/20 border-green-500 text-white'
+                      : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:bg-gray-700'
                       }`}
                   >{pair.value}</button>
                 ))}
@@ -440,6 +440,15 @@ export default function Calculator() {
               </button>
             </div>
 
+            {/* Lien vers Advanced Calculator */}
+            <button
+              onClick={() => navigate('/advanced-calculator')}
+              className="w-full mb-4 py-3 bg-gradient-to-r from-purple-500 to-blue-500 hover:opacity-90 text-white rounded-lg font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20"
+            >
+              <Crown size={18} />
+              Ouvrir le Calculateur Avancé (PRO/ELITE)
+            </button>
+
             {/* Boutons navigation */}
             <div className="flex gap-3">
               <button
@@ -467,8 +476,8 @@ export default function Calculator() {
               {/* Compteur guest en haut à droite */}
               {isGuest && (
                 <span className={`ml-auto text-xs font-medium px-2.5 py-1 rounded-full ${guestCalcCount >= GUEST_LIMIT
-                    ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                    : 'bg-gray-800 text-gray-400'
+                  ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                  : 'bg-gray-800 text-gray-400'
                   }`}>
                   {guestCalcCount}/{GUEST_LIMIT} calculs
                 </span>
@@ -505,7 +514,7 @@ export default function Calculator() {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-300">Risk/Reward Ratio</span>
                     <span className={`text-2xl font-bold ${results.rrRatio >= 2 ? 'text-green-400' :
-                        results.rrRatio >= 1 ? 'text-yellow-400' : 'text-red-400'
+                      results.rrRatio >= 1 ? 'text-yellow-400' : 'text-red-400'
                       }`}>1:{results.rrRatio.toFixed(2)}</span>
                   </div>
                 </div>

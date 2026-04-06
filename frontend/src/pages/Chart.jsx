@@ -169,7 +169,7 @@ export default function Chart() {
                             <p className="text-sm text-gray-300">
                                 <span className="font-medium text-[#6366F1]">{remaining}</span> analyse{remaining > 1 ? 's' : ''} restante{remaining > 1 ? 's' : ''}.
                             </p>
-                            <button onClick={() => navigate('/SelectPlan')} className="text-xs text-[#6366F1] hover:text-[#8183F4] font-medium">
+                            <button onClick={() => navigate('/select-plan')} className="text-xs text-[#6366F1] hover:text-[#8183F4] font-medium">
                                 Passer en illimité →
                             </button>
                         </div>
