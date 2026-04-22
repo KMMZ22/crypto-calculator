@@ -48,25 +48,12 @@ const CalculatorsMenu = () => {
               navigate('/PnLCalculator');
               setIsOpen(false);
             }}
-            className="w-full px-4 py-3 text-left text-sm text-gray-300 hover:text-white hover:bg-[#1E1F23] flex items-center gap-3"
+            className="w-full px-4 py-3 text-left text-sm text-gray-300 hover:text-white hover:bg-[#1E1F23] last:rounded-b-lg flex items-center gap-3"
           >
             <DollarSign size={16} className="text-[#6366F1]" />
             <div>
               <p className="font-medium">Profit & Loss</p>
               <p className="text-xs text-gray-500">Calculez vos gains/pertes</p>
-            </div>
-          </button>
-          <button
-            onClick={() => {
-              navigate('/chart');
-              setIsOpen(false);
-            }}
-            className="w-full px-4 py-3 text-left text-sm text-gray-300 hover:text-white hover:bg-[#1E1F23] last:rounded-b-lg flex items-center gap-3"
-          >
-            <LineChart size={16} className="text-[#6366F1]" />
-            <div>
-              <p className="font-medium">Analyse Technique</p>
-              <p className="text-xs text-gray-500">Graphique live Binance</p>
             </div>
           </button>
         </div>

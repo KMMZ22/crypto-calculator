@@ -1,120 +1,65 @@
 // src/components/TradingChart.jsx
-import React, { useEffect, useRef } from 'react';
-import {
-    createChart,
-    CandlestickSeries,
-    HistogramSeries,
-    LineSeries,
-} from 'lightweight-charts';
+import React, { useEffect, useRef, memo } from 'react';
 
-// Simple EMA calculation
-const computeEMA = (values, period = 20) => {
-    const k = 2 / (period + 1);
-    let ema = values[0];
-    return values.map((v, i) => {
-        ema = i === 0 ? v : v * k + ema * (1 - k);
-        return ema;
-    });
-};
-
-// Deduplicate and sort an array of {time, ...} objects by ascending time
-const cleanSeries = (arr) => {
-    const seen = new Set();
-    return arr
-        .sort((a, b) => a.time - b.time)
-        .filter(item => {
-            if (seen.has(item.time)) return false;
-            seen.add(item.time);
-            return true;
-        });
-};
-
-const TradingChart = ({ data, width, height, showVolume = true, indicator = 'none' }) => {
-    const chartContainerRef = useRef();
+const TradingChart = ({ symbol = 'BTCUSDT', height = 600, theme = 'dark' }) => {
+    const containerRef = useRef(null);
+    // On garde un ID statique par instance pour éviter qu'il change à chaque re-render
+    const idRef = useRef(`tv_${Math.random().toString(36).substring(7)}`);
 
     useEffect(() => {
-        if (!chartContainerRef.current || !data?.length) return;
+        let tvWidget = null;
 
-        const chart = createChart(chartContainerRef.current, {
-            autoSize: true,
-            height: height || 600,
-            layout: {
-                background: { type: 'solid', color: '#131517' },
-                textColor: '#d1d5db',
-            },
-            grid: {
-                vertLines: { color: '#1E1F23' },
-                horzLines: { color: '#1E1F23' },
-            },
-            crosshair: { mode: 0 },
-            rightPriceScale: { borderColor: '#1E1F23' },
-            timeScale: {
-                borderColor: '#1E1F23',
-                timeVisible: true,
-                secondsVisible: false,
-            },
-        });
+        const initWidget = () => {
+            if (typeof window.TradingView !== 'undefined' && containerRef.current) {
+                containerRef.current.innerHTML = ''; // Nettoyage de l'iframe précédent
+                tvWidget = new window.TradingView.widget({
+                    autosize: true,
+                    symbol: `BINANCE:${symbol}`,
+                    interval: 'D', // Timeframe par défaut (1 Jour)
+                    timezone: 'Etc/UTC',
+                    theme: theme,
+                    style: '1', // 1 = Bougies japonaises (Candles)
+                    locale: 'fr',
+                    enable_publishing: false,
+                    backgroundColor: '#131517', // S'accorde avec le thème Tailwind de l'app
+                    gridColor: '#1E1F23',
+                    hide_top_toolbar: false,
+                    hide_legend: false,
+                    save_image: true,
+                    container_id: idRef.current,
+                    toolbar_bg: '#131517',
+                    allow_symbol_change: true,
+                    hide_side_toolbar: false, // TRÈS IMPORTANT: Affiche les outils de dessin
+                    studies: [],
+                });
+            }
+        };
 
-        // ── Candlestick ──────────────────────────────────────────────────────────
-        const candlestickSeries = chart.addSeries(CandlestickSeries, {
-            upColor: '#10b981',
-            downColor: '#ef4444',
-            borderDownColor: '#ef4444',
-            borderUpColor: '#10b981',
-            wickDownColor: '#ef4444',
-            wickUpColor: '#10b981',
-        });
-
-        // data[i].time is already a Unix timestamp in seconds (from backend)
-        const candleData = cleanSeries(
-            data.map(d => ({
-                time: typeof d.time === 'number' ? d.time : Math.floor(new Date(d.date || d.time).getTime() / 1000),
-                open: d.open,
-                high: d.high,
-                low: d.low,
-                close: d.close,
-            }))
-        );
-        candlestickSeries.setData(candleData);
-
-        // ── Volume (conditional) ─────────────────────────────────────────────────
-        if (showVolume) {
-            const volumeSeries = chart.addSeries(HistogramSeries, {
-                color: '#26a69a',
-                priceFormat: { type: 'volume' },
-                priceScaleId: '',
-                scaleMargins: { top: 0.8, bottom: 0 },
-            });
-            volumeSeries.setData(
-                cleanSeries(
-                    data.map(d => ({
-                        time: typeof d.time === 'number' ? d.time : Math.floor(new Date(d.date || d.time).getTime() / 1000),
-                        value: d.volume,
-                        color: d.close > d.open ? '#10b981aa' : '#ef4444aa',
-                    }))
-                )
-            );
-        }
-
-        // ── Indicators (conditional) ─────────────────────────────────────────────
-        if (indicator === 'ema') {
-            const closes = candleData.map(d => d.close);
-            const ema20 = computeEMA(closes, 20);
-            const ema50 = computeEMA(closes, 50);
-
-            const ema20Series = chart.addSeries(LineSeries, { color: '#6366F1', lineWidth: 1, title: 'EMA 20' });
-            const ema50Series = chart.addSeries(LineSeries, { color: '#f59e0b', lineWidth: 1, title: 'EMA 50' });
-
-            ema20Series.setData(candleData.map((d, i) => ({ time: d.time, value: ema20[i] })));
-            ema50Series.setData(candleData.map((d, i) => ({ time: d.time, value: ema50[i] })));
+        // Injecter le script dans le head s'il n'existe pas encore globalement
+        if (typeof window.TradingView === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://s3.tradingview.com/tv.js';
+            script.type = 'text/javascript';
+            script.async = true;
+            script.onload = initWidget;
+            document.head.appendChild(script);
+        } else {
+            // S'il existe déjà (ex: navigation inter-onglets), instancier directement
+            initWidget();
         }
 
         return () => {
-            chart.remove();
+            if (containerRef.current) {
+                containerRef.current.innerHTML = '';
+            }
         };
-    }, [data, height, showVolume, indicator]);
+    }, [symbol, theme]);
 
-    return <div ref={chartContainerRef} style={{ width: '100%', height: height || 600 }} />;
+    return (
+        <div style={{ height, width: '100%' }}>
+            <div id={idRef.current} ref={containerRef} style={{ height: '100%', width: '100%' }} />
+        </div>
+    );
 };
 
-export default TradingChart;
+export default memo(TradingChart);

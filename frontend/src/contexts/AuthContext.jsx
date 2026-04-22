@@ -60,12 +60,17 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    // 5 secondes max pour la vérification du compte (au lieu de 30s)
     const timeout = setTimeout(() => {
       if (loading) {
-        console.warn('⚠️ AuthContext timeout - force loading false');
+        console.warn('⚠️ AuthContext timeout - force loading false et nettoyage session');
+        // Si Supabase freeze à cause d'un token corrompu, on vide le cache pour débloquer l'appli
+        supabase.auth.signOut().catch(() => {});
         setLoading(false);
+        setUser(null);
+        setProfile(null);
       }
-    }, 30000);
+    }, 5000);
     checkUser();
     return () => clearTimeout(timeout);
   }, []);

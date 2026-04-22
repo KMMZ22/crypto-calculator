@@ -57,23 +57,23 @@ export default function StripeSuccess() {
           setTimeout(() => reject(new Error("Timeout de la base de données. Veuillez rafraîchir.")), 15000)
         );
 
+        // Mettre à jour le plan est maintenant géré par le Webhook Stripe côté backend.
+        // Nous attendons simplement quelques secondes pour laisser le temps au webhook de s'exécuter.
         const updateProcess = async () => {
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .update({ subscription_plan: normalizedPlan })
-            .eq('id', user.id);
-
-          if (profileError) throw profileError;
-
-          // Ajouter les crédits en fonction du plan
-          await supabase
-            .from('ai_credits')
-            .upsert({
-              user_id: user.id,
-              credits_remaining: normalizedPlan === 'elite' ? 50 : 20,
-              monthly_limit: normalizedPlan === 'elite' ? 50 : 20
-            }, { onConflict: 'user_id' });
-
+          // Polling the database max 10 times to see if webhook updated the plan
+          for (let i = 0; i < 10; i++) {
+            const { data } = await supabase
+              .from('profiles')
+              .select('subscription_plan')
+              .eq('id', user.id)
+              .single();
+              
+            if (data?.subscription_plan === normalizedPlan) {
+              return { success: true };
+            }
+            await new Promise(res => setTimeout(res, 1000));
+          }
+          console.warn("Le Webhook prend du temps, mais le paiement est validé côté Stripe.");
           return { success: true };
         };
 

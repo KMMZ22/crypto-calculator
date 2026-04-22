@@ -7,42 +7,8 @@ async function getCryptoPrices(symbols, currency = 'USD', usePremium = false) {
   try {
     const symbolList = symbols.split(',').map(s => s.trim().toLowerCase());
     
-    if (usePremium && process.env.COINGECKO_API_KEY) {
-      // Use Pro API
-      const response = await axios.get('https://api.coingecko.com/api/v3/simple/price', {
-        params: {
-          ids: symbolList.join(','),
-          vs_currencies: currency.toLowerCase(),
-          include_market_cap: true,
-          include_24hr_vol: true,
-          include_24hr_change: true,
-          include_last_updated_at: true
-        },
-        headers: {
-          'x-cg-pro-api-key': process.env.COINGECKO_API_KEY
-        }
-      });
-      
-      return {
-        data: response.data,
-        source: 'coingecko_pro',
-        isRealTime: true
-      };
-    } else {
-      // Use Free API (public)
-      const response = await axios.get('https://api.coingecko.com/api/v3/simple/price', {
-        params: {
-          ids: symbolList.join(','),
-          vs_currencies: currency.toLowerCase()
-        }
-      });
-      
-      return {
-        data: response.data,
-        source: 'coingecko_free',
-        isRealTime: false
-      };
-    }
+    // CoinGecko API logic removed by request.
+    return getMockCryptoPrices(symbols, currency);
   } catch (error) {
     console.error('CoinGecko API error:', error.message);
     

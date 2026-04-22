@@ -14,6 +14,11 @@ import CalculatorsMenu from '../components/CalculatorsMenu';
 import PnLChart from '../components/charts/PnLchart';
 import WinLossChart from '../components/charts/WinLossChart';
 import PairPerformance from '../components/charts/PairPerformance';
+import DashboardStats from '../components/dashboard/DashboardStats';
+import DashboardShortcuts from '../components/dashboard/DashboardShortcuts';
+import RecentTradesTable from '../components/dashboard/RecentTradesTable';
+import useSWR from 'swr';
+import UserGuide from '../components/dashboard/UserGuide';
 
 export default function Dashboard() {
   console.log('🚀 Dashboard monté'); // LOG 1
@@ -48,7 +53,7 @@ export default function Dashboard() {
 
       console.log('✅ Utilisateur connecté:', user.email);
       try {
-        await loadUserData(user.id);
+        // removed undefined loadUserData
       } catch (err) {
         console.error('❌ Erreur dashboard init:', err);
       }
@@ -99,93 +104,89 @@ export default function Dashboard() {
   };
 
   // =====================================================
-  // CHARGER LES DONNÉES (PROFIL, TRADES, CRÉDITS) - AVEC LOGS DE PERFORMANCE
+  // FETCHING AVEC SWR
   // =====================================================
-  const loadUserData = async (userId) => {
-    console.log('🚀 DÉBUT loadUserData');
-    console.time('⏱️ CHARGEMENT TOTAL');
-
+  const fetcher = async () => {
+    console.log('🚀 Démarrage du fetcher SWR...');
     try {
-      setLoading(true);
+      if (!user) {
+        console.log('fetcher: pas de user, return vide');
+        return { tradesData: [], credits: { credits_remaining: 0 } };
+      }
+      const profileData = authProfile || { subscription_plan: 'free' };
+      console.log('fetcher: chargement trades...');
+      const tradesData = await loadTradesWithLimit(user.id, profileData);
+      
+      console.log('fetcher: chargement credits...');
+      const { data: credits } = await supabase
+        .from('ai_credits')
+        .select('credits_remaining')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      // Wrapper global avec timeout de 15 secondes pour éviter le chargement infini (même problème que Signup)
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout du serveur. Les données n'ont pas pu être chargées.")), 15000)
-      );
+      console.log('fetcher: terminé avec succès');
+      return { tradesData, credits: credits || { credits_remaining: 0 } };
+    } catch (err) {
+      console.error('❌ ERREUR FATALE FETCHER:', err);
+      return { tradesData: [], credits: { credits_remaining: 0 } };
+    }
+  };
 
-      const fetchDataProcess = async () => {
-        // 1. Profil : utiliser celui de l'AuthContext (déjà chargé) ou fallback
-        console.log('📥 Chargement du profil via AuthContext...');
-        const profileData = authProfile || { subscription_plan: 'free' };
-        setProfile(profileData);
-        console.log('✅ Profil reçu:', profileData);
+  const { data, error: swrError, isLoading } = useSWR(user ? `dashboard_data_${user.id}` : null, fetcher, {
+    refreshInterval: 60000, // Refresh every minute
+    revalidateOnFocus: true
+  });
 
-        // 2. Trades : utiliser la fonction loadTradesWithLimit
-        console.log('📥 Chargement des trades...');
-        console.time('⏱️ Trades');
-        const tradesData = await loadTradesWithLimit(userId, profileData);
-        console.timeEnd('⏱️ Trades');
-        console.log(`✅ ${tradesData?.length || 0} trades chargés`);
-        setTrades(tradesData || []);
-        setAllTradesCount(tradesData?.length || 0);
+  useEffect(() => {
+    if (!isLoading || data || swrError) {
+      setLoading(false);
+    }
+    
+    // Fallback de sécurité rapide gérant les fetchs SWR trop longs ou silencieux
+    const timer = setTimeout(() => {
+       if (loading) setLoading(false);
+    }, 1500);
+    
+    return () => clearTimeout(timer);
+  }, [data, swrError, isLoading]);
 
-        // 3. Crédits
-        console.log('📥 Chargement des crédits IA...');
-        console.time('⏱️ Crédits');
-        const { data: credits, error: creditsError } = await supabase
-          .from('ai_credits')
-          .select('credits_remaining')
-          .eq('user_id', userId)
-          .maybeSingle();
-        console.timeEnd('⏱️ Crédits');
+  useEffect(() => {
+    if (data) {
+      setTrades(data.tradesData || []);
+      setAllTradesCount(data.tradesData?.length || 0);
 
-        if (creditsError) console.error('❌ Erreur crédits détaillée:', creditsError);
+      const tradesData = data.tradesData || [];
+      const winningTrades = tradesData.filter(t => t.status === 'win').length || 0;
+      const losingTrades = tradesData.filter(t => t.status === 'loss').length || 0;
+      const totalPnl = tradesData.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0) || 0;
+      const validRr = tradesData.filter(t => t.rr_ratio);
+      const avgRr = validRr.reduce((sum, t) => sum + (parseFloat(t.rr_ratio) || 0), 0) / (validRr.length || 1);
 
-        return { tradesData, credits };
-      };
-
-      const { tradesData, credits } = await Promise.race([fetchDataProcess(), timeoutPromise]);
-
-      // Calcul des statistiques à partir des tradesData
-      console.log('📊 Calcul des statistiques...');
-      console.time('⏱️ Calcul stats');
-
-      const winningTrades = tradesData?.filter(t => t.status === 'win').length || 0;
-      const losingTrades = tradesData?.filter(t => t.status === 'loss').length || 0;
-      const totalPnl = tradesData?.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0) || 0;
-      const avgRr = tradesData?.filter(t => t.rr_ratio).reduce((sum, t) => sum + (parseFloat(t.rr_ratio) || 0), 0) / (tradesData?.filter(t => t.rr_ratio).length || 1);
+      setProfile(authProfile || { subscription_plan: 'free' });
 
       setStats({
-        total_trades: tradesData?.length || 0,
+        total_trades: tradesData.length || 0,
         winning_trades: winningTrades,
         losing_trades: losingTrades,
-        win_rate: tradesData?.length ? (winningTrades / tradesData.length) * 100 : 0,
+        win_rate: tradesData.length ? (winningTrades / tradesData.length) * 100 : 0,
         total_pnl: totalPnl,
         avg_rr_ratio: avgRr || 0,
-        ai_credits: credits?.credits_remaining || 0,
-        trades_this_month: tradesData?.filter(t => {
+        ai_credits: data.credits?.credits_remaining || 0,
+        trades_this_month: tradesData.filter(t => {
           const date = new Date(t.entry_at);
           const now = new Date();
           return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
         }).length || 0,
-        pnl_this_month: tradesData?.filter(t => {
+        pnl_this_month: tradesData.filter(t => {
           const date = new Date(t.entry_at);
           const now = new Date();
           return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
         }).reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0) || 0
       });
-
-      console.timeEnd('⏱️ Calcul stats');
-      console.log('✅ Toutes les données chargées');
-
-    } catch (error) {
-      console.error('❌ Erreur CATASTROPHIQUE dans loadUserData:', error);
-    } finally {
-      console.log('🏁 finally - setLoading(false)');
-      console.timeEnd('⏱️ CHARGEMENT TOTAL');
-      setLoading(false);
+    } else if (!user && !authLoading) {
+      setLoading(false); // Guest mode
     }
-  };
+  }, [data, user, isLoading, authLoading, authProfile]);
 
   // =====================================================
   // DÉTECTION DU PLAN (dépend de profile, défini après loadUserData)
@@ -280,7 +281,7 @@ export default function Dashboard() {
           t.status
         ]);
 
-        const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+        const csvContent = [headers, ...rows].map(row => row.join(',')).join('\\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -304,13 +305,12 @@ export default function Dashboard() {
 
   console.log('📊 Render, loading =', loading); // LOG 18
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-[#0A0B0D] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#6366F1] mx-auto mb-4"></div>
           <p className="text-gray-400 text-lg">Chargement de votre dashboard...</p>
-          <p className="text-gray-500 text-sm mt-2">(Si cela persiste, vérifiez la console)</p>
         </div>
       </div>
     );
@@ -475,6 +475,7 @@ export default function Dashboard() {
               { id: 'historique', label: '📋 Historique' },
               { id: 'analyses', label: '📈 Analyses' },
               ...(isElite ? [{ id: 'ai', label: '🤖 IA Advisor' }] : []),
+              { id: 'guide', label: '📖 Guide d\'utilisation' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -497,48 +498,7 @@ export default function Dashboard() {
         {activeTab === 'resume' && (
           <div className="space-y-8">
             {/* Stats cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-[#131517] border border-[#1E1F23] rounded-xl p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm text-gray-400">Profit total</p>
-                  <span className="text-xs text-[#6366F1] bg-[#6366F1]/10 px-2 py-1 rounded">Total</span>
-                </div>
-                <p className={`text-3xl font-bold ${(stats?.total_pnl || 0) > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {(stats?.total_pnl || 0) > 0 ? '+' : ''}{stats?.total_pnl?.toLocaleString() || '0'}€
-                </p>
-              </div>
-
-              <div className="bg-[#131517] border border-[#1E1F23] rounded-xl p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm text-gray-400">Trades</p>
-                  <span className="text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded">
-                    {stats?.win_rate?.toFixed(1) || 0}%
-                  </span>
-                </div>
-                <p className="text-3xl font-bold text-white">{stats?.total_trades || 0}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {stats?.winning_trades || 0} wins / {stats?.losing_trades || 0} losses
-                </p>
-              </div>
-
-              <div className="bg-[#131517] border border-[#1E1F23] rounded-xl p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm text-gray-400">Ratio R:R</p>
-                  <span className="text-xs text-purple-400 bg-purple-400/10 px-2 py-1 rounded">Moyen</span>
-                </div>
-                <p className="text-3xl font-bold text-white">1:{stats?.avg_rr_ratio?.toFixed(1) || '0.0'}</p>
-              </div>
-
-              <div className="bg-[#131517] border border-[#1E1F23] rounded-xl p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm text-gray-400">PnL mensuel</p>
-                  <span className="text-xs text-orange-400 bg-orange-400/10 px-2 py-1 rounded">Ce mois</span>
-                </div>
-                <p className={`text-3xl font-bold ${(stats?.pnl_this_month || 0) > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {(stats?.pnl_this_month || 0) > 0 ? '+' : ''}{stats?.pnl_this_month?.toLocaleString() || '0'}€
-                </p>
-              </div>
-            </div>
+            <DashboardStats stats={stats} />
 
             {/* Bannière limitation */}
             {!isElite && hiddenTradesCount > 0 && (
@@ -557,119 +517,10 @@ export default function Dashboard() {
             )}
 
             {/* Derniers trades */}
-            <div className="bg-[#131517] border border-[#1E1F23] rounded-xl p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-semibold text-white">Derniers trades</h2>
-                <button onClick={() => setActiveTab('historique')} className="text-sm text-[#6366F1] hover:text-[#8183F4] transition flex items-center gap-1">
-                  Voir tout <ChevronRight size={16} />
-                </button>
-              </div>
-
-              {trades.length === 0 ? (
-                <div className="text-center py-12">
-                  <BarChart3 className="text-gray-600 mx-auto mb-4" size={48} />
-                  <p className="text-gray-400">Aucun trade sur les {getHistoricalPeriod()}</p>
-                  <button onClick={() => navigate('/Calculator')} className="mt-4 px-6 py-2 bg-[#6366F1] text-white rounded-lg hover:bg-[#4F52E0] transition">
-                    Calculer votre premier trade
-                  </button>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-[#1E1F23]">
-                        <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Paire</th>
-                        <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Entrée</th>
-                        <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Taille</th>
-                        <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">R:R</th>
-                        <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Profit</th>
-                        <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {trades.slice(0, 5).map((trade) => (
-                        <tr key={trade.id} className="border-b border-[#1E1F23]/50 hover:bg-[#1A1C20]">
-                          <td className="py-3 text-sm text-gray-300">{new Date(trade.entry_at).toLocaleDateString('fr-FR')}</td>
-                          <td className="py-3 font-medium text-white">{trade.symbol}</td>
-                          <td className="py-3 text-sm text-gray-300">${trade.entry_price}</td>
-                          <td className="py-3 text-sm text-gray-300">${trade.position_size_usd?.toLocaleString()}</td>
-                          <td className="py-3">
-                            <span className={`px-2 py-1 rounded text-xs ${trade.rr_ratio >= 2 ? 'bg-green-400/10 text-green-400' :
-                              trade.rr_ratio >= 1 ? 'bg-yellow-400/10 text-yellow-400' :
-                                'bg-red-400/10 text-red-400'
-                              }`}>
-                              1:{trade.rr_ratio?.toFixed(1) || '0.0'}
-                            </span>
-                          </td>
-                          <td className={`py-3 text-sm font-medium ${trade.profit_loss > 0 ? 'text-green-400' : trade.profit_loss < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                            {trade.profit_loss > 0 ? '+' : ''}{trade.profit_loss?.toFixed(2) || '0'}€
-                          </td>
-                          <td className="py-3">
-                            <span className={`px-2 py-1 rounded text-xs ${trade.status === 'win' ? 'bg-green-400/10 text-green-400' :
-                              trade.status === 'loss' ? 'bg-red-400/10 text-red-400' :
-                                trade.status === 'pending' ? 'bg-yellow-400/10 text-yellow-400' :
-                                  'bg-gray-400/10 text-gray-400'
-                              }`}>
-                              {trade.status === 'win' ? 'Gagné' : trade.status === 'loss' ? 'Perdu' : trade.status === 'pending' ? 'Ouvert' : trade.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+            <RecentTradesTable trades={trades} getHistoricalPeriod={getHistoricalPeriod} setActiveTab={setActiveTab} />
 
             {/* Accès rapides calculateurs */}
-            <div className="grid md:grid-cols-3 gap-6">
-              <button onClick={() => navigate('/Calculator')} className="bg-[#131517] border border-[#1E1F23] hover:border-[#6366F1]/50 rounded-xl p-6 text-left transition group">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 bg-[#6366F1]/10 rounded-lg group-hover:bg-[#6366F1]/20 transition">
-                    <Calculator className="text-[#6366F1]" size={24} />
-                  </div>
-                  <ChevronRight className="text-gray-500 group-hover:text-[#6366F1] group-hover:translate-x-1 transition" size={20} />
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">Position Sizing</h3>
-                <p className="text-sm text-gray-400">Calculez la taille idéale selon votre capital et votre risque</p>
-              </button>
-
-              <button onClick={() => navigate('/PnLCalculator')} className="bg-[#131517] border border-[#1E1F23] hover:border-[#6366F1]/50 rounded-xl p-6 text-left transition group">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 bg-[#6366F1]/10 rounded-lg group-hover:bg-[#6366F1]/20 transition">
-                    <DollarSign className="text-[#6366F1]" size={24} />
-                  </div>
-                  <ChevronRight className="text-gray-500 group-hover:text-[#6366F1] group-hover:translate-x-1 transition" size={20} />
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">Profit & Loss</h3>
-                <p className="text-sm text-gray-400">Calculez vos profits et pertes sur un trade existant</p>
-              </button>
-
-              <button onClick={() => navigate('/chart')} className="bg-[#131517] border border-[#1E1F23] hover:border-[#6366F1]/50 rounded-xl p-6 text-left transition group">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 bg-[#6366F1]/10 rounded-lg group-hover:bg-[#6366F1]/20 transition">
-                    <LineChart className="text-[#6366F1]" size={24} />
-                  </div>
-                  <ChevronRight className="text-gray-500 group-hover:text-[#6366F1] group-hover:translate-x-1 transition" size={20} />
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">Analyse Technique</h3>
-                <p className="text-sm text-gray-400">Graphique candlestick live avec indicateurs EMA, RSI, Bollinger</p>
-              </button>
-
-              <button onClick={() => navigate('/chart-analysis')} className="bg-[#131517] border border-[#1E1F23] hover:border-[#6366F1]/50 rounded-xl p-6 text-left transition group relative overflow-hidden">
-                <div className="absolute top-4 right-4 bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] px-2 py-1 rounded text-[10px] font-bold text-white tracking-wider">
-                  PRO+
-                </div>
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 bg-[#6366F1]/10 rounded-lg group-hover:bg-[#6366F1]/20 transition">
-                    <Camera className="text-[#6366F1]" size={24} />
-                  </div>
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">Analyse IA (Image)</h3>
-                <p className="text-sm text-gray-400">Uploadez un screenshot et obtenez une analyse instantanée avec plan de trade.</p>
-              </button>
-            </div>
+            <DashboardShortcuts />
           </div>
         )}
 
@@ -847,6 +698,9 @@ export default function Dashboard() {
 
         {/* ===== ONGLET CALENDRIER ===== */}
         {activeTab === 'calendar' && (<EconomicCalendar />)}
+
+        {/* ===== ONGLET GUIDE ===== */}
+        {activeTab === 'guide' && (<UserGuide />)}
 
         {/* ===== ONGLET IA ADVISOR ===== */}
         {activeTab === 'ai' && isElite && (

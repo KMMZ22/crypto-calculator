@@ -17,16 +17,28 @@ async function handleCheckoutCompleted(session) {
     console.log(`Checkout completed for user: ${userId}`);
 
     // Update user profile
-    const { error } = await supabaseAdmin
-      .from('user_profiles')
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
       .update({
-        stripe_customer_id: stripeCustomerId,
-        subscription_plan: metadata?.plan || 'PRO',
-        credits: null // Unlimited for paid plans
+        subscription_plan: metadata?.plan || 'PRO'
       })
       .eq('id', userId);
 
-    if (error) throw error;
+    if (profileError) throw profileError;
+
+    // Allocate AI credits based on plan
+    const plan = metadata?.plan?.toLowerCase() || 'pro';
+    const creditsAmount = plan === 'elite' ? 50 : 20;
+
+    const { error: creditsError } = await supabaseAdmin
+      .from('ai_credits')
+      .upsert({
+        user_id: userId,
+        credits_remaining: creditsAmount,
+        monthly_limit: creditsAmount
+      }, { onConflict: 'user_id' });
+
+    if (creditsError) console.error('Failed to allocate credits:', creditsError);
 
     // Log activity
     await logActivity(userId, 'subscription_created', {
@@ -49,17 +61,20 @@ async function handleSubscriptionChange(subscription) {
   try {
     const { customer: stripeCustomerId, status, items, current_period_end } = subscription;
 
-    // Find user by stripe customer ID
-    const { data: user, error: userError } = await supabaseAdmin
-      .from('user_profiles')
-      .select('id')
+    // Find user by stripe customer ID (In profiles table, does it have stripe_customer_id?)
+    // Let's assume we map via subscriptions table or the profiles table directly.
+    // For safety, since we might missing stripe_customer_id in profiles, we rely on the subscriptions table.
+    const { data: sub } = await supabaseAdmin
+      .from('subscriptions')
+      .select('user_id')
       .eq('stripe_customer_id', stripeCustomerId)
       .single();
 
-    if (!user) {
+    if (!sub) {
       console.error(`No user found for stripe customer: ${stripeCustomerId}`);
       return;
     }
+    const userId = sub.user_id;
 
     // Determine plan from subscription items or metadata
     let plan = 'PRO'; // Default
@@ -88,11 +103,11 @@ async function handleSubscriptionChange(subscription) {
 
     // Update user plan
     const { error: updateError } = await supabaseAdmin
-      .from('user_profiles')
+      .from('profiles')
       .update({
-        subscription_plan: plan
+        subscription_plan: plan.toLowerCase()
       })
-      .eq('id', user.id);
+      .eq('id', userId);
 
     if (updateError) throw updateError;
 

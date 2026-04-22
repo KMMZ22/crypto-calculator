@@ -3,7 +3,10 @@ const router = express.Router();
 const { authenticate } = require('../middleware/authMiddleware');
 const { checkFeatureAccess } = require('../middleware/planMiddleware');
 const axios = require('axios');
+const NodeCache = require('node-cache');
 
+// Create a cache with standard TTL of 60 seconds (1 minute).
+const cache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
 const BINANCE_BASE = 'https://api.binance.com';
 
 // Mapping our internal timeframes → Binance intervals
@@ -22,6 +25,12 @@ router.get('/klines', async (req, res) => {
   try {
     const { symbol = 'BTCUSDT', interval = '1D', limit = 200 } = req.query;
     const binanceInterval = INTERVAL_MAP[interval] || '1d';
+    
+    const cacheKey = `klines_${symbol}_${binanceInterval}_${limit}`;
+    const cachedData = cache.get(cacheKey);
+    if (cachedData) {
+      return res.json({ success: true, symbol, interval, source: 'cache', candles: cachedData });
+    }
 
     const response = await axios.get(`${BINANCE_BASE}/api/v3/klines`, {
       params: { symbol, interval: binanceInterval, limit: parseInt(limit) },
@@ -39,7 +48,9 @@ router.get('/klines', async (req, res) => {
       volume: parseFloat(k[5]),
     }));
 
-    res.json({ success: true, symbol, interval, candles });
+    cache.set(cacheKey, candles);
+
+    res.json({ success: true, symbol, interval, source: 'api', candles });
   } catch (error) {
     console.error('Binance klines error:', error.message);
     res.status(502).json({
@@ -54,20 +65,18 @@ router.get('/crypto', authenticate, checkFeatureAccess('realTimePrices'), async 
   try {
     const { symbols = 'BTC,ETH,BNB,SOL,XRP', currency = 'USD' } = req.query;
     const usePremiumApi = req.user.subscription_plan !== 'FREE';
+    
+    // Create cache key based on query params and user plan
+    const cacheKey = `crypto_${symbols}_${currency}_${usePremiumApi}`;
+    const cachedPrices = cache.get(cacheKey);
+    if (cachedPrices) {
+      return res.json({ success: true, prices: cachedPrices, currency, isRealTime: usePremiumApi, source: 'cache', lastUpdated: new Date().toISOString() });
+    }
+
     let prices = {};
 
-    if (usePremiumApi && process.env.COINGECKO_API_KEY) {
-      const symbolList = symbols.split(',').map(s => s.trim().toLowerCase());
-      try {
-        const response = await axios.get('https://api.coingecko.com/api/v3/simple/price', {
-          params: { ids: symbolList.join(','), vs_currencies: currency.toLowerCase(), precision: 'full' },
-          headers: { 'x-cg-pro-api-key': process.env.COINGECKO_API_KEY },
-        });
-        prices = response.data;
-      } catch (apiError) {
-        console.warn('Premium API failed, falling back:', apiError.message);
-      }
-    }
+    // CoinGecko API integration was removed by request.
+    // Falling back to mock data or other real-time APIs if configured below.
 
     if (Object.keys(prices).length === 0) {
       const symbolList = symbols.split(',').map(s => s.trim().toLowerCase());
@@ -91,7 +100,9 @@ router.get('/crypto', authenticate, checkFeatureAccess('realTimePrices'), async 
       prices = result;
     }
 
-    res.json({ success: true, prices, currency, isRealTime: usePremiumApi, lastUpdated: new Date().toISOString() });
+    cache.set(cacheKey, prices);
+
+    res.json({ success: true, prices, currency, isRealTime: usePremiumApi, source: 'api', lastUpdated: new Date().toISOString() });
   } catch (error) {
     console.error('Price fetch error:', error);
     res.status(500).json({ error: 'PRICE_FETCH_ERROR', message: 'Error fetching crypto prices' });
@@ -105,6 +116,12 @@ router.get('/history/:symbol', authenticate, checkFeatureAccess('realTimePrices'
     const { days = 7 } = req.query;
     const binanceSymbol = symbol.toUpperCase() + 'USDT';
 
+    const cacheKey = `history_${binanceSymbol}_${days}`;
+    const cachedHistory = cache.get(cacheKey);
+    if (cachedHistory) {
+      return res.json({ success: true, symbol: symbol.toUpperCase(), currency: 'USD', history: cachedHistory, days: parseInt(days), source: 'cache' });
+    }
+
     const response = await axios.get(`${BINANCE_BASE}/api/v3/klines`, {
       params: { symbol: binanceSymbol, interval: '1d', limit: parseInt(days) },
       timeout: 8000,
@@ -116,7 +133,10 @@ router.get('/history/:symbol', authenticate, checkFeatureAccess('realTimePrices'
       volume: parseFloat(k[5]),
     }));
 
-    res.json({ success: true, symbol: symbol.toUpperCase(), currency: 'USD', history, days: parseInt(days), source: 'binance' });
+    // Cache history for a bit longer as it doesn't change as fast
+    cache.set(cacheKey, history, 300);
+
+    res.json({ success: true, symbol: symbol.toUpperCase(), currency: 'USD', history, days: parseInt(days), source: 'api' });
   } catch (error) {
     console.error('History fetch error:', error.message);
     res.status(502).json({ error: 'HISTORY_FETCH_ERROR', message: 'Error fetching price history' });
