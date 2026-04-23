@@ -41,7 +41,7 @@ export default function DashboardShortcuts() {
       </button>
 
       <button onClick={() => navigate('/chart-analysis')} className="bg-[#131517] border border-[#1E1F23] hover:border-[#6366F1]/50 rounded-xl p-6 text-left transition group relative overflow-hidden">
-        <div className="absolute top-4 right-4 bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] px-2 py-1 rounded text-[10px] font-bold text-white tracking-wider">
+        <div className="absolute top-4 right-4 bg-[#1A1B26] border border-[#4F46E5]/40 px-2 py-1 rounded text-[10px] font-bold text-[#818CF8] tracking-wider shadow-sm">
           PRO+
         </div>
         <div className="flex items-start justify-between mb-4">

@@ -440,14 +440,16 @@ export default function Calculator() {
               </button>
             </div>
 
-            {/* Lien vers Advanced Calculator */}
-            <button
-              onClick={() => navigate('/advanced-calculator')}
-              className="w-full mb-4 py-3 bg-gradient-to-r from-purple-500 to-blue-500 hover:opacity-90 text-white rounded-lg font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20"
-            >
-              <Crown size={18} />
-              Ouvrir le Calculateur Avancé (PRO/ELITE)
-            </button>
+            {/* Lien vers Advanced Calculator (Réservé PRO/ELITE) */}
+            {(userPlan === 'pro' || userPlan === 'elite') && (
+              <button
+                onClick={() => navigate('/advanced-calculator')}
+                className="w-full mb-4 py-3 bg-[#1A1B26] hover:bg-[#232438] border border-[#4F46E5]/40 hover:border-[#4F46E5] text-white rounded-lg font-bold transition flex items-center justify-center gap-2 shadow-lg"
+              >
+                <Crown className="text-[#818CF8]" size={18} />
+                Ouvrir le Calculateur Avancé (PRO/ELITE)
+              </button>
+            )}
 
             {/* Boutons navigation */}
             <div className="flex gap-3">
