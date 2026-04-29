@@ -50,7 +50,7 @@ export default function Chart() {
                 </p>
                 <div className="flex flex-col gap-3">
                     <button
-                        onClick={() => navigate('/register')}
+                        onClick={() => navigate('/signup')}
                         className="bg-[#6366F1] text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-[#4F51D8] transition"
                     >
                         Créer un compte gratuit

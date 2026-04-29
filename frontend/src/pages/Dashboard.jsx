@@ -1,6 +1,6 @@
 // src/pages/Dashboard.jsx - VERSION AVEC LOGS DE PERFORMANCE
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import {
   BarChart3, History, Download, Bell, Settings,
   TrendingUp, Shield, Zap, Clock, User,
@@ -30,7 +30,13 @@ export default function Dashboard() {
   const [trades, setTrades] = useState([]);
   const [allTradesCount, setAllTradesCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('resume');
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabParam || 'resume');
+
+  useEffect(() => {
+    if (tabParam) setActiveTab(tabParam);
+  }, [tabParam]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);

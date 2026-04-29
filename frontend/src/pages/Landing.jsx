@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Shield, ArrowRight, Check, TrendingUp, BarChart3, Lock, Zap, ChevronDown, Star, Sparkles, Award, Globe } from 'lucide-react';
 import LiquidEther from '../components/LiquidEther';
 import SplitText from '../components/SplitText';
@@ -1299,27 +1299,26 @@ export default function Landing() {
               <ul className="space-y-2 text-sm text-gray-500">
                 <li><a href="#features" className="hover:text-white transition-colors">{t.features}</a></li>
                 <li><a href="#pricing" className="hover:text-white transition-colors">{t.pricing}</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Changelog</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Roadmap</a></li>
+                <li><span className="text-gray-700 cursor-not-allowed">Changelog (Bientôt)</span></li>
+                <li><span className="text-gray-700 cursor-not-allowed">Roadmap (Bientôt)</span></li>
               </ul>
             </div>
 
             <div>
               <h4 className="font-semibold mb-4 text-sm">{t.resources}</h4>
               <ul className="space-y-2 text-sm text-gray-500">
-                <li><a href="#" className="hover:text-white transition-colors">{t.documentation}</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">{t.blog}</a></li>
+                <li><span className="text-gray-700 cursor-not-allowed">{t.documentation} (Bientôt)</span></li>
+                <li><span className="text-gray-700 cursor-not-allowed">{t.blog} (Bientôt)</span></li>
                 <li><a href="#faq" className="hover:text-white transition-colors">{t.faq}</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">{t.support}</a></li>
+                <li><a href="mailto:support@tradeguard.com" className="hover:text-white transition-colors">{t.support}</a></li>
               </ul>
             </div>
 
             <div>
               <h4 className="font-semibold mb-4 text-sm">{t.legal}</h4>
               <ul className="space-y-2 text-sm text-gray-500">
-                <li><a href="/terms" className="hover:text-white transition-colors">{t.terms}</a></li>
-                <li><a href="/privacy" className="hover:text-white transition-colors">{t.privacy}</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">{t.legalNotices}</a></li>
+                <li><Link to="/terms" className="hover:text-white transition-colors">{t.terms}</Link></li>
+                <li><Link to="/privacy" className="hover:text-white transition-colors">{t.privacy}</Link></li>
               </ul>
             </div>
           </div>

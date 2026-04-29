@@ -32,7 +32,7 @@ export default function AdvancedCalculator() {
         const { data: { user }, error } = await supabase.auth.getUser();
 
         if (error || !user) {
-          navigate('/auth');
+          navigate('/signup');
           return;
         }
 
@@ -47,7 +47,7 @@ export default function AdvancedCalculator() {
         }
       } catch (error) {
         console.error('Error loading user:', error);
-        navigate('/auth');
+        navigate('/signup');
       }
     };
 

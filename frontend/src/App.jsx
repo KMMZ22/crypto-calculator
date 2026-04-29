@@ -25,6 +25,7 @@ import Success from './pages/Success';
 import StripeSuccess from './pages/StripeSuccess';
 import ChartPage from './pages/Chart';
 import ChartAnalysis from './pages/ChartAnalysis';
+import Settings from './pages/Settings';
 
 
 function App() {
@@ -83,6 +84,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <ChartAnalysis />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
               </ProtectedRoute>
             }
           />
